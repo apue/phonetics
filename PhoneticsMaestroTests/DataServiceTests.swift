@@ -37,6 +37,20 @@ final class DataServiceTests: XCTestCase {
         XCTAssertEqual(wrappedPair?.rightText, "bat")
     }
 
+    func testFetchPreviousPairWrapsAroundWhenReachingTheBeginning() async throws {
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = DataService(appSupportURL: appSupportURL)
+        try await service.initialize()
+
+        let lastPair = try await service.fetchPreviousPair()
+        let wrappedPair = try await service.fetchPreviousPair(beforeID: 1)
+        XCTAssertEqual(wrappedPair?.id, lastPair?.id)
+        XCTAssertEqual(wrappedPair?.leftText, lastPair?.leftText)
+        XCTAssertEqual(wrappedPair?.rightText, lastPair?.rightText)
+    }
+
     func testUpdatePairTagStatePersistsSavedAndHardFlags() async throws {
         let appSupportURL = makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: appSupportURL) }

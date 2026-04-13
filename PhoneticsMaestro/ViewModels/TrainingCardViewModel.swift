@@ -58,6 +58,10 @@ final class TrainingCardViewModel {
         await loadPair(afterID: currentPair?.id, forceReload: false)
     }
 
+    func loadPreviousPair() async {
+        await loadPreviousPair(forceReload: false)
+    }
+
     func playRandomTest() async throws {
         guard let currentPair else {
             errorMessage = "Load a training pair before starting a random test."
@@ -241,33 +245,28 @@ final class TrainingCardViewModel {
         do {
             try await persistCurrentPairProgressIfNeeded()
             let pair = try await dataService.fetchNextPair(afterID: afterID)
-            currentPair = pair
-            pendingAnswer = nil
-            perceptionState = .idle
-            selectedPracticeTarget = .left
-            isRecording = false
-            isABABLooping = false
-            if let pair {
-                let tagState = try await dataService.fetchPairTagState(for: pair.id)
-                sessionStats = try await dataService.fetchPairSessionStats(
-                    for: pair.id,
-                    sessionDate: sessionDateProvider()
-                )
-                isSaved = tagState.isSaved
-                isHard = tagState.isHard
-                baseElapsedSeconds = sessionStats.elapsedSeconds
-                cardStartDate = nowProvider()
-                startTimer()
-            } else {
-                timerTask?.cancel()
-                timerTask = nil
-                sessionStats = SessionStats()
-                baseElapsedSeconds = 0
-                cardStartDate = nil
-                isSaved = false
-                isHard = false
-            }
+            try await applyLoadedPair(pair)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func loadPreviousPair(forceReload: Bool) async {
+        guard !isLoading else {
+            return
+        }
+
+        if !forceReload, currentPair == nil {
             errorMessage = nil
+        }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            try await persistCurrentPairProgressIfNeeded()
+            let pair = try await dataService.fetchPreviousPair(beforeID: currentPair?.id)
+            try await applyLoadedPair(pair)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -279,6 +278,38 @@ final class TrainingCardViewModel {
         }
 
         try await persistSessionStats()
+    }
+
+    private func applyLoadedPair(_ pair: PhonePair?) async throws {
+        currentPair = pair
+        pendingAnswer = nil
+        perceptionState = .idle
+        selectedPracticeTarget = .left
+        isRecording = false
+        isABABLooping = false
+
+        if let pair {
+            let tagState = try await dataService.fetchPairTagState(for: pair.id)
+            sessionStats = try await dataService.fetchPairSessionStats(
+                for: pair.id,
+                sessionDate: sessionDateProvider()
+            )
+            isSaved = tagState.isSaved
+            isHard = tagState.isHard
+            baseElapsedSeconds = sessionStats.elapsedSeconds
+            cardStartDate = nowProvider()
+            startTimer()
+        } else {
+            timerTask?.cancel()
+            timerTask = nil
+            sessionStats = SessionStats()
+            baseElapsedSeconds = 0
+            cardStartDate = nil
+            isSaved = false
+            isHard = false
+        }
+
+        errorMessage = nil
     }
 
     private func persistSessionStats() async throws {

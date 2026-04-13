@@ -65,6 +65,16 @@ actor DataService {
         }
     }
 
+    func fetchPreviousPair(beforeID: Int64? = nil) throws -> PhonePair? {
+        try withDatabase { db in
+            if let beforeID, let previousPair = try fetchPair(beforeID: beforeID, in: db) {
+                return previousPair
+            }
+
+            return try fetchLastPair(in: db)
+        }
+    }
+
     func fetchPairTagState(for itemID: Int64) throws -> TrainingTagState {
         try withDatabase { db in
             let row = try Row.fetchOne(
@@ -389,6 +399,30 @@ actor DataService {
         )
     }
 
+    private func fetchPair(beforeID: Int64, in db: Database) throws -> PhonePair? {
+        try PhonePair.fetchOne(
+            db,
+            sql: """
+            SELECT
+              pairs.id,
+              pairs.phoneme_contrast AS phonemeContrast,
+              pairs.tier,
+              pairs.difficulty,
+              wordA.text AS leftText,
+              wordA.ipa AS leftIPA,
+              wordB.text AS rightText,
+              wordB.ipa AS rightIPA
+            FROM pairs
+            JOIN words AS wordA ON wordA.id = pairs.word_a_id
+            JOIN words AS wordB ON wordB.id = pairs.word_b_id
+            WHERE pairs.id < ?
+            ORDER BY pairs.id DESC
+            LIMIT 1
+            """,
+            arguments: [beforeID]
+        )
+    }
+
     private func fetchFirstPair(in db: Database) throws -> PhonePair? {
         try PhonePair.fetchOne(
             db,
@@ -406,6 +440,28 @@ actor DataService {
             JOIN words AS wordA ON wordA.id = pairs.word_a_id
             JOIN words AS wordB ON wordB.id = pairs.word_b_id
             ORDER BY pairs.id
+            LIMIT 1
+            """
+        )
+    }
+
+    private func fetchLastPair(in db: Database) throws -> PhonePair? {
+        try PhonePair.fetchOne(
+            db,
+            sql: """
+            SELECT
+              pairs.id,
+              pairs.phoneme_contrast AS phonemeContrast,
+              pairs.tier,
+              pairs.difficulty,
+              wordA.text AS leftText,
+              wordA.ipa AS leftIPA,
+              wordB.text AS rightText,
+              wordB.ipa AS rightIPA
+            FROM pairs
+            JOIN words AS wordA ON wordA.id = pairs.word_a_id
+            JOIN words AS wordB ON wordB.id = pairs.word_b_id
+            ORDER BY pairs.id DESC
             LIMIT 1
             """
         )

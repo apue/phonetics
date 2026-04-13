@@ -269,6 +269,28 @@ final class TrainingCardViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.currentPair?.id, 2)
         XCTAssertEqual(viewModel.sessionStats, SessionStats())
     }
+
+    func testLoadPreviousPairPersistsElapsedTimeBeforeSwitching() async {
+        let clock = TestClock(now: Date(timeIntervalSince1970: 100))
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            sessionDateProvider: { "2026-04-13" },
+            nowProvider: { clock.now }
+        )
+
+        await viewModel.loadInitialPair()
+        clock.now = Date(timeIntervalSince1970: 108)
+        await viewModel.loadPreviousPair()
+
+        let updates = await dataService.sessionStatsUpdates()
+        XCTAssertEqual(updates.last?.itemID, 1)
+        XCTAssertEqual(updates.last?.stats.elapsedSeconds, 8)
+        XCTAssertEqual(viewModel.currentPair?.id, 2)
+        XCTAssertEqual(viewModel.sessionStats, SessionStats())
+    }
 }
 
 actor MockTrainingDataService: TrainingDataServing {
@@ -291,27 +313,18 @@ actor MockTrainingDataService: TrainingDataServing {
     func fetchNextPair(afterID: Int64?) async throws -> PhonePair? {
         switch afterID {
         case 1:
-            PhonePair(
-                id: 2,
-                phonemeContrast: "ɪ-iː",
-                tier: .word,
-                difficulty: 1,
-                leftText: "ship",
-                leftIPA: "/ʃɪp/",
-                rightText: "sheep",
-                rightIPA: "/ʃiːp/"
-            )
+            secondPair
         default:
-            PhonePair(
-                id: 1,
-                phonemeContrast: "ʌ-æ",
-                tier: .word,
-                difficulty: 1,
-                leftText: "but",
-                leftIPA: "/bʌt/",
-                rightText: "bat",
-                rightIPA: "/bæt/"
-            )
+            firstPair
+        }
+    }
+
+    func fetchPreviousPair(beforeID: Int64?) async throws -> PhonePair? {
+        switch beforeID {
+        case 2:
+            firstPair
+        default:
+            secondPair
         }
     }
 
@@ -364,6 +377,32 @@ actor MockTrainingDataService: TrainingDataServing {
 
     func sessionStatsUpdates() -> [(itemID: Int64, sessionDate: String, stats: SessionStats, isSaved: Bool, isHard: Bool)] {
         sessionUpdates
+    }
+
+    private var firstPair: PhonePair {
+        PhonePair(
+            id: 1,
+            phonemeContrast: "ʌ-æ",
+            tier: .word,
+            difficulty: 1,
+            leftText: "but",
+            leftIPA: "/bʌt/",
+            rightText: "bat",
+            rightIPA: "/bæt/"
+        )
+    }
+
+    private var secondPair: PhonePair {
+        PhonePair(
+            id: 2,
+            phonemeContrast: "ɪ-iː",
+            tier: .word,
+            difficulty: 1,
+            leftText: "ship",
+            leftIPA: "/ʃɪp/",
+            rightText: "sheep",
+            rightIPA: "/ʃiːp/"
+        )
     }
 }
 

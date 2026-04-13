@@ -30,12 +30,21 @@ struct TrainingCardView: View {
             }
 
             HStack(spacing: 12) {
+                Button("Previous Card") {
+                    Task {
+                        await viewModel.loadPreviousPair()
+                    }
+                }
+                .buttonStyle(.bordered)
+                .keyboardShortcut(.leftArrow, modifiers: [])
+
                 Button("Next Card") {
                     Task {
                         await viewModel.loadNextPair()
                     }
                 }
                 .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.rightArrow, modifiers: [])
 
                 Button("Reload") {
                     Task {
@@ -137,6 +146,7 @@ struct TrainingCardView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.space, modifiers: [])
 
                 Button(pair.leftText) {
                     Task {
@@ -189,6 +199,7 @@ struct TrainingCardView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(viewModel.isRecording ? .red : .accentColor)
+                .keyboardShortcut("r", modifiers: [])
 
                 Button("Standard") {
                     Task {
