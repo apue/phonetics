@@ -128,9 +128,84 @@ final class TrainingCardViewModelTests: XCTestCase {
         XCTAssertEqual(stopCount, 1)
         XCTAssertFalse(viewModel.isABABLooping)
     }
+
+    func testLoadInitialPairReadsExistingTagState() async {
+        let dataService = MockTrainingDataService(tagState: TrainingTagState(isSaved: true, isHard: false))
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService
+        )
+
+        await viewModel.loadInitialPair()
+
+        XCTAssertTrue(viewModel.isSaved)
+        XCTAssertFalse(viewModel.isHard)
+    }
+
+    func testToggleSaveAndHardPersistThroughDataService() async throws {
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            sessionDateProvider: { "2026-04-13" }
+        )
+
+        await viewModel.loadInitialPair()
+        try await viewModel.toggleSaved()
+        try await viewModel.toggleHard()
+
+        let updates = await dataService.tagUpdates()
+        XCTAssertEqual(updates.count, 2)
+        XCTAssertEqual(updates[0].state, TrainingTagState(isSaved: true, isHard: false))
+        XCTAssertEqual(updates[1].state, TrainingTagState(isSaved: true, isHard: true))
+        XCTAssertTrue(viewModel.isSaved)
+        XCTAssertTrue(viewModel.isHard)
+    }
+
+    func testToggleSavedRollsBackStateWhenPersistenceFails() async {
+        let dataService = MockTrainingDataService(updateError: DataServiceError.database("write failed"))
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            sessionDateProvider: { "2026-04-13" }
+        )
+
+        await viewModel.loadInitialPair()
+
+        do {
+            try await viewModel.toggleSaved()
+            XCTFail("Expected save toggle to throw when persistence fails")
+        } catch {
+            guard case let DataServiceError.database(message) = error else {
+                XCTFail("Expected database error, got \(error)")
+                return
+            }
+
+            XCTAssertEqual(message, "write failed")
+        }
+
+        XCTAssertFalse(viewModel.isSaved)
+        let updates = await dataService.tagUpdates()
+        XCTAssertTrue(updates.isEmpty)
+    }
 }
 
 actor MockTrainingDataService: TrainingDataServing {
+    private let tagState: TrainingTagState
+    private let updateError: Error?
+    private var updates: [(itemID: Int64, sessionDate: String, state: TrainingTagState)] = []
+
+    init(
+        tagState: TrainingTagState = TrainingTagState(isSaved: false, isHard: false),
+        updateError: Error? = nil
+    ) {
+        self.tagState = tagState
+        self.updateError = updateError
+    }
+
     func fetchNextPair(afterID _: Int64?) async throws -> PhonePair? {
         PhonePair(
             id: 1,
@@ -142,6 +217,31 @@ actor MockTrainingDataService: TrainingDataServing {
             rightText: "bat",
             rightIPA: "/bæt/"
         )
+    }
+
+    func fetchPairTagState(for _: Int64) async throws -> TrainingTagState {
+        if let latest = updates.last?.state {
+            return latest
+        }
+
+        return tagState
+    }
+
+    func updatePairTagState(
+        for itemID: Int64,
+        sessionDate: String,
+        isSaved: Bool,
+        isHard: Bool
+    ) async throws {
+        if let updateError {
+            throw updateError
+        }
+
+        updates.append((itemID, sessionDate, TrainingTagState(isSaved: isSaved, isHard: isHard)))
+    }
+
+    func tagUpdates() -> [(itemID: Int64, sessionDate: String, state: TrainingTagState)] {
+        updates
     }
 }
 
