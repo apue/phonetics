@@ -14,6 +14,16 @@ final class TrainingCardViewModel {
     var isABABLooping = false
     var isSaved = false
     var isHard = false
+    var feedbackHighlight: TrainingFeedbackHighlight? {
+        switch perceptionState {
+        case .correct:
+            return .success
+        case .incorrect:
+            return .error
+        case .idle, .awaitingAnswer:
+            return nil
+        }
+    }
 
     private let dataService: any TrainingDataServing
     private let audioService: any TrainingAudioServing
