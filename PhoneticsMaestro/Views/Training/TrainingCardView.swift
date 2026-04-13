@@ -2,6 +2,9 @@ import SwiftUI
 
 struct TrainingCardView: View {
     @Bindable var viewModel: TrainingCardViewModel
+    @State private var isRecordButtonPulsing = false
+    @State private var isFeedbackHighlighted = false
+    @State private var feedbackResetTask: Task<Void, Never>?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -57,6 +60,19 @@ struct TrainingCardView: View {
             Text("The current practice target is highlighted above. Use Record to capture yourself, then compare against the selected standard target.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
+        }
+        .onAppear {
+            syncRecordingAnimation()
+            triggerFeedbackHighlight(for: viewModel.feedbackHighlight)
+        }
+        .onChange(of: viewModel.isRecording) { _, _ in
+            syncRecordingAnimation()
+        }
+        .onChange(of: viewModel.feedbackHighlight) { _, newValue in
+            triggerFeedbackHighlight(for: newValue)
+        }
+        .onDisappear {
+            feedbackResetTask?.cancel()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(32)
@@ -167,6 +183,11 @@ struct TrainingCardView: View {
 
             Text(feedbackText)
                 .foregroundStyle(feedbackColor)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(feedbackBackground, in: RoundedRectangle(cornerRadius: 12))
+                .scaleEffect(isFeedbackHighlighted ? 1.02 : 1.0)
+                .animation(.easeOut(duration: 0.25), value: isFeedbackHighlighted)
 
             HStack(spacing: 20) {
                 statValue("LISTENS", value: "\(viewModel.sessionStats.listens)")
@@ -199,6 +220,26 @@ struct TrainingCardView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(viewModel.isRecording ? .red : .accentColor)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.red.opacity(viewModel.isRecording ? 0.45 : 0.0), lineWidth: 2)
+                        .scaleEffect(isRecordButtonPulsing ? 1.08 : 0.96)
+                        .opacity(isRecordButtonPulsing ? 0.2 : 0.0)
+                        .animation(
+                            viewModel.isRecording
+                                ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true)
+                                : .easeOut(duration: 0.2),
+                            value: isRecordButtonPulsing
+                        )
+                }
+                .scaleEffect(isRecordButtonPulsing ? 1.03 : 1.0)
+                .shadow(color: Color.red.opacity(isRecordButtonPulsing ? 0.2 : 0.0), radius: 14)
+                .animation(
+                    viewModel.isRecording
+                        ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true)
+                        : .easeOut(duration: 0.2),
+                    value: isRecordButtonPulsing
+                )
                 .keyboardShortcut("r", modifiers: [])
 
                 Button("Standard") {
@@ -275,6 +316,17 @@ struct TrainingCardView: View {
         }
     }
 
+    private var feedbackBackground: Color {
+        switch viewModel.feedbackHighlight {
+        case .success:
+            return Color.green.opacity(isFeedbackHighlighted ? 0.18 : 0.08)
+        case .error:
+            return Color.red.opacity(isFeedbackHighlighted ? 0.18 : 0.08)
+        case nil:
+            return Color.secondary.opacity(0.08)
+        }
+    }
+
     private var practiceFeedbackText: String {
         if viewModel.isRecording {
             return "Recording in progress. Press Stop Record to save this attempt."
@@ -327,6 +379,30 @@ struct TrainingCardView: View {
             Text(value)
                 .font(.title3.monospacedDigit())
                 .fontWeight(.semibold)
+        }
+    }
+
+    private func syncRecordingAnimation() {
+        isRecordButtonPulsing = viewModel.isRecording
+    }
+
+    private func triggerFeedbackHighlight(for highlight: TrainingFeedbackHighlight?) {
+        feedbackResetTask?.cancel()
+        guard highlight != nil else {
+            isFeedbackHighlighted = false
+            return
+        }
+
+        isFeedbackHighlighted = true
+        feedbackResetTask = Task {
+            try? await Task.sleep(for: .milliseconds(900))
+            guard !Task.isCancelled else {
+                return
+            }
+
+            await MainActor.run {
+                isFeedbackHighlighted = false
+            }
         }
     }
 }

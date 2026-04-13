@@ -57,6 +57,30 @@ final class TrainingCardViewModelTests: XCTestCase {
         XCTAssertEqual(correctionRequests, ["bat"])
     }
 
+    func testPerceptionFeedbackHighlightTracksResultState() async throws {
+        let correctViewModel = TrainingCardViewModel(
+            dataService: MockTrainingDataService(),
+            audioService: MockTrainingAudioService(randomTestIndex: 0)
+        )
+
+        await correctViewModel.loadInitialPair()
+        XCTAssertNil(correctViewModel.feedbackHighlight)
+        try await correctViewModel.playRandomTest()
+        XCTAssertNil(correctViewModel.feedbackHighlight)
+        await correctViewModel.submitPerceptionGuess(.left)
+        XCTAssertEqual(correctViewModel.feedbackHighlight, .success)
+
+        let incorrectViewModel = TrainingCardViewModel(
+            dataService: MockTrainingDataService(),
+            audioService: MockTrainingAudioService(randomTestIndex: 1)
+        )
+
+        await incorrectViewModel.loadInitialPair()
+        try await incorrectViewModel.playRandomTest()
+        await incorrectViewModel.submitPerceptionGuess(.left)
+        XCTAssertEqual(incorrectViewModel.feedbackHighlight, .error)
+    }
+
     func testToggleRecordingStartsAndStopsRecordingAndUpdatesPracticeCount() async throws {
         let dataService = MockTrainingDataService()
         let audioService = MockTrainingAudioService(randomTestIndex: 0)
