@@ -56,6 +56,78 @@ final class TrainingCardViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.perceptionState, .incorrect(expected: .right))
         XCTAssertEqual(correctionRequests, ["bat"])
     }
+
+    func testToggleRecordingStartsAndStopsRecordingAndUpdatesPracticeCount() async throws {
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            sessionDateProvider: { "2026-04-13" }
+        )
+
+        await viewModel.loadInitialPair()
+        try await viewModel.toggleRecording()
+
+        let attempts = await audioService.recordStartRequests().map(\.attempt)
+        XCTAssertTrue(viewModel.isRecording)
+        XCTAssertEqual(viewModel.sessionStats.practices, 0)
+        XCTAssertEqual(attempts, [1])
+
+        try await viewModel.toggleRecording()
+
+        let stopRecordingCount = await audioService.stopRecordingCallCount()
+        XCTAssertFalse(viewModel.isRecording)
+        XCTAssertEqual(viewModel.sessionStats.practices, 1)
+        XCTAssertEqual(stopRecordingCount, 1)
+    }
+
+    func testPracticePlaybackUsesSelectedTargetForStandardAndABAB() async throws {
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            sessionDateProvider: { "2026-04-13" }
+        )
+
+        await viewModel.loadInitialPair()
+        viewModel.selectPracticeTarget(.right)
+
+        try await viewModel.playSelectedStandard()
+        try await viewModel.toggleRecording()
+        try await viewModel.toggleRecording()
+        try await viewModel.toggleABABLoop()
+
+        let standardRequests = await audioService.standardPlaybackRequests()
+        let ababRequests = await audioService.ababLoopRequests()
+        XCTAssertEqual(standardRequests, ["bat"])
+        XCTAssertEqual(ababRequests, ["bat"])
+        XCTAssertTrue(viewModel.isABABLooping)
+    }
+
+    func testPlayUserRecordingAndStopABABLoopDelegateToAudioService() async throws {
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            sessionDateProvider: { "2026-04-13" }
+        )
+
+        await viewModel.loadInitialPair()
+        try await viewModel.toggleRecording()
+        try await viewModel.toggleRecording()
+        try await viewModel.playUserRecording()
+        try await viewModel.toggleABABLoop()
+        await viewModel.stopPlayback()
+
+        let userPlaybackCount = await audioService.userPlaybackCallCount()
+        let stopCount = await audioService.stopCallCount()
+        XCTAssertEqual(userPlaybackCount, 1)
+        XCTAssertEqual(stopCount, 1)
+        XCTAssertFalse(viewModel.isABABLooping)
+    }
 }
 
 actor MockTrainingDataService: TrainingDataServing {
@@ -77,6 +149,11 @@ actor MockTrainingAudioService: TrainingAudioServing {
     private let randomTestIndex: Int
     private var randomRequests: [[String]] = []
     private var standardRequests: [String] = []
+    private var recordRequests: [(itemType: String, itemID: Int64, attempt: Int, sessionDate: String)] = []
+    private var stopRecordingCount = 0
+    private var userPlaybackCount = 0
+    private var ababRequests: [String] = []
+    private var stopCount = 0
 
     init(randomTestIndex: Int) {
         self.randomTestIndex = randomTestIndex
@@ -91,11 +168,58 @@ actor MockTrainingAudioService: TrainingAudioServing {
         standardRequests.append(text)
     }
 
+    func startRecording(
+        itemType: String,
+        itemID: Int64,
+        attempt: Int,
+        sessionDate: String
+    ) async throws -> URL {
+        recordRequests.append((itemType, itemID, attempt, sessionDate))
+        return URL(fileURLWithPath: "/tmp/\(itemType)-\(itemID)-attempt-\(attempt).caf")
+    }
+
+    func stopRecording() async throws -> URL {
+        stopRecordingCount += 1
+        return URL(fileURLWithPath: "/tmp/pair-1-attempt-\(stopRecordingCount).caf")
+    }
+
+    func playUserRecording() async throws {
+        userPlaybackCount += 1
+    }
+
+    func startABABLoop(standardText: String) async throws {
+        ababRequests.append(standardText)
+    }
+
+    func stop() async {
+        stopCount += 1
+    }
+
     func randomTestRequests() -> [[String]] {
         randomRequests
     }
 
     func standardPlaybackRequests() -> [String] {
         standardRequests
+    }
+
+    func recordStartRequests() -> [(itemType: String, itemID: Int64, attempt: Int, sessionDate: String)] {
+        recordRequests
+    }
+
+    func stopRecordingCallCount() -> Int {
+        stopRecordingCount
+    }
+
+    func userPlaybackCallCount() -> Int {
+        userPlaybackCount
+    }
+
+    func ababLoopRequests() -> [String] {
+        ababRequests
+    }
+
+    func stopCallCount() -> Int {
+        stopCount
     }
 }

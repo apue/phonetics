@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 
 @MainActor
@@ -8,17 +9,29 @@ final class TrainingCardViewModel {
     var errorMessage: String?
     var perceptionState: PerceptionState = .idle
     var sessionStats = SessionStats()
+    var selectedPracticeTarget: PairOption = .left
+    var isRecording = false
+    var isABABLooping = false
 
     private let dataService: any TrainingDataServing
     private let audioService: any TrainingAudioServing
+    private let sessionDateProvider: @Sendable () -> String
     private var pendingAnswer: PairOption?
 
     init(
         dataService: any TrainingDataServing = DataService.shared,
-        audioService: any TrainingAudioServing = AudioService.shared
+        audioService: any TrainingAudioServing = AudioService.shared,
+        sessionDateProvider: @escaping @Sendable () -> String = {
+            let formatter = DateFormatter()
+            formatter.calendar = Calendar(identifier: .gregorian)
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.dateFormat = "yyyy-MM-dd"
+            return formatter.string(from: Date())
+        }
     ) {
         self.dataService = dataService
         self.audioService = audioService
+        self.sessionDateProvider = sessionDateProvider
     }
 
     func loadInitialPair() async {
@@ -75,6 +88,70 @@ final class TrainingCardViewModel {
         }
     }
 
+    func selectPracticeTarget(_ target: PairOption) {
+        selectedPracticeTarget = target
+    }
+
+    func toggleRecording() async throws {
+        guard let currentPair else {
+            errorMessage = "Load a training pair before recording."
+            return
+        }
+
+        if isRecording {
+            _ = try await audioService.stopRecording()
+            isRecording = false
+            sessionStats.practices += 1
+            return
+        }
+
+        _ = try await audioService.startRecording(
+            itemType: "pair",
+            itemID: currentPair.id,
+            attempt: sessionStats.practices + 1,
+            sessionDate: sessionDateProvider()
+        )
+        isRecording = true
+        isABABLooping = false
+        errorMessage = nil
+    }
+
+    func playSelectedStandard() async throws {
+        guard let currentPair else {
+            errorMessage = "Load a training pair before playback."
+            return
+        }
+
+        try await audioService.playStandard(for: text(for: selectedPracticeTarget, pair: currentPair))
+    }
+
+    func playUserRecording() async throws {
+        try await audioService.playUserRecording()
+    }
+
+    func toggleABABLoop() async throws {
+        guard let currentPair else {
+            errorMessage = "Load a training pair before starting A/B playback."
+            return
+        }
+
+        if isABABLooping {
+            await audioService.stop()
+            isABABLooping = false
+            return
+        }
+
+        try await audioService.startABABLoop(
+            standardText: text(for: selectedPracticeTarget, pair: currentPair)
+        )
+        isABABLooping = true
+    }
+
+    func stopPlayback() async {
+        await audioService.stop()
+        isABABLooping = false
+    }
+
     private func loadPair(afterID: Int64?, forceReload: Bool) async {
         guard !isLoading else {
             return
@@ -91,6 +168,9 @@ final class TrainingCardViewModel {
             currentPair = try await dataService.fetchNextPair(afterID: afterID)
             pendingAnswer = nil
             perceptionState = .idle
+            selectedPracticeTarget = .left
+            isRecording = false
+            isABABLooping = false
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription

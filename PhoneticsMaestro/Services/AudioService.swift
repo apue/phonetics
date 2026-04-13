@@ -264,4 +264,12 @@ extension AudioService: TrainingAudioServing {
     func playStandard(for text: String) async throws {
         try await playStandard(for: text, voiceIdentifier: nil, rate: 1.0)
     }
+
+    func playUserRecording() async throws {
+        try await playUserRecording(rate: 1.0)
+    }
+
+    func startABABLoop(standardText: String) async throws {
+        try await startABABLoop(standardText: standardText, voiceIdentifier: nil, rate: 1.0, silenceNanoseconds: 300_000_000)
+    }
 }
