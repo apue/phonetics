@@ -86,6 +86,29 @@ actor DataService {
         }
     }
 
+    func fetchPairSessionStats(for itemID: Int64, sessionDate: String) throws -> SessionStats {
+        try withDatabase { db in
+            let row = try Row.fetchOne(
+                db,
+                sql: """
+                SELECT listen_count, correct_count, practice_count, time_spent_sec
+                FROM user_progress
+                WHERE item_type = 'pair' AND item_id = ? AND session_date = ?
+                ORDER BY updated_at DESC, id DESC
+                LIMIT 1
+                """,
+                arguments: [itemID, sessionDate]
+            )
+
+            return SessionStats(
+                listens: row?["listen_count"] ?? 0,
+                correct: row?["correct_count"] ?? 0,
+                practices: row?["practice_count"] ?? 0,
+                elapsedSeconds: row?["time_spent_sec"] ?? 0
+            )
+        }
+    }
+
     func updatePairTagState(
         for itemID: Int64,
         sessionDate: String,
@@ -124,6 +147,68 @@ actor DataService {
                     ) VALUES ('pair', ?, ?, ?, ?)
                     """,
                     arguments: [itemID, sessionDate, isSaved, isHard]
+                )
+            }
+        }
+    }
+
+    func updatePairSessionStats(
+        for itemID: Int64,
+        sessionDate: String,
+        stats: SessionStats,
+        isSaved: Bool,
+        isHard: Bool
+    ) throws {
+        try withDatabaseWrite { db in
+            if let progressID = try latestPairProgressID(for: itemID, sessionDate: sessionDate, in: db) {
+                try db.execute(
+                    sql: """
+                    UPDATE user_progress
+                    SET
+                        listen_count = ?,
+                        correct_count = ?,
+                        practice_count = ?,
+                        time_spent_sec = ?,
+                        is_saved = ?,
+                        is_hard = ?,
+                        updated_at = datetime('now')
+                    WHERE id = ?
+                    """,
+                    arguments: [
+                        stats.listens,
+                        stats.correct,
+                        stats.practices,
+                        stats.elapsedSeconds,
+                        isSaved,
+                        isHard,
+                        progressID
+                    ]
+                )
+            } else {
+                try db.execute(
+                    sql: """
+                    INSERT INTO user_progress (
+                        item_type,
+                        item_id,
+                        session_date,
+                        listen_count,
+                        correct_count,
+                        practice_count,
+                        time_spent_sec,
+                        is_saved,
+                        is_hard
+                    ) VALUES ('pair', ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    arguments: [
+                        itemID,
+                        sessionDate,
+                        stats.listens,
+                        stats.correct,
+                        stats.practices,
+                        stats.elapsedSeconds,
+                        isSaved,
+                        isHard
+                    ]
                 )
             }
         }
@@ -260,6 +345,24 @@ actor DataService {
         } catch {
             throw DataServiceError.database(error.localizedDescription)
         }
+    }
+
+    private func latestPairProgressID(
+        for itemID: Int64,
+        sessionDate: String,
+        in db: Database
+    ) throws -> Int64? {
+        try Int64.fetchOne(
+            db,
+            sql: """
+            SELECT id
+            FROM user_progress
+            WHERE item_type = 'pair' AND item_id = ? AND session_date = ?
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            arguments: [itemID, sessionDate]
+        )
     }
 
     private func fetchPair(afterID: Int64, in db: Database) throws -> PhonePair? {

@@ -58,6 +58,31 @@ final class DataServiceTests: XCTestCase {
         XCTAssertEqual(updatedState, TrainingTagState(isSaved: true, isHard: true))
     }
 
+    func testUpdatePairSessionStatsPersistsCurrentCountsAndElapsedTime() async throws {
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = DataService(appSupportURL: appSupportURL)
+        try await service.initialize()
+
+        let initialStats = try await service.fetchPairSessionStats(for: 1, sessionDate: "2026-04-13")
+        XCTAssertEqual(initialStats, SessionStats())
+
+        let sessionStats = SessionStats(listens: 3, correct: 2, practices: 1, elapsedSeconds: 75)
+        try await service.updatePairSessionStats(
+            for: 1,
+            sessionDate: "2026-04-13",
+            stats: sessionStats,
+            isSaved: true,
+            isHard: false
+        )
+
+        let updatedStats = try await service.fetchPairSessionStats(for: 1, sessionDate: "2026-04-13")
+        XCTAssertEqual(updatedStats, sessionStats)
+        let updatedTags = try await service.fetchPairTagState(for: 1)
+        XCTAssertEqual(updatedTags, TrainingTagState(isSaved: true, isHard: false))
+    }
+
     private func makeTemporaryDirectory() -> URL {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)

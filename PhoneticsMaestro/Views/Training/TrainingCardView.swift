@@ -160,7 +160,7 @@ struct TrainingCardView: View {
 
             HStack(spacing: 20) {
                 statValue("LISTENS", value: "\(viewModel.sessionStats.listens)")
-                statValue("CORRECT", value: "\(viewModel.sessionStats.correct)")
+                statValue("CORRECT", value: correctStatText)
             }
         }
         .padding(20)
@@ -232,6 +232,7 @@ struct TrainingCardView: View {
 
             HStack(spacing: 20) {
                 statValue("PRACTICES", value: "\(viewModel.sessionStats.practices)")
+                statValue("TIME", value: elapsedTimeText)
                 statValue("TARGET", value: viewModel.selectedPracticeTarget.rawValue.uppercased())
             }
         }
@@ -286,6 +287,16 @@ struct TrainingCardView: View {
         case .right:
             return "B • \(pair.rightText)"
         }
+    }
+
+    private var correctStatText: String {
+        "\(viewModel.sessionStats.correct)/\(viewModel.sessionStats.listens)"
+    }
+
+    private var elapsedTimeText: String {
+        let minutes = viewModel.sessionStats.elapsedSeconds / 60
+        let seconds = viewModel.sessionStats.elapsedSeconds % 60
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 
     private func targetBackground(for option: PairOption) -> some ShapeStyle {

@@ -31,7 +31,7 @@ final class TrainingCardViewModelTests: XCTestCase {
 
         await viewModel.loadInitialPair()
         try await viewModel.playRandomTest()
-        await viewModel.submitPerceptionGuess(.left)
+        await viewModel.submitPerceptionGuess(PairOption.left)
 
         XCTAssertEqual(viewModel.sessionStats.listens, 1)
         XCTAssertEqual(viewModel.sessionStats.correct, 1)
@@ -191,32 +191,128 @@ final class TrainingCardViewModelTests: XCTestCase {
         let updates = await dataService.tagUpdates()
         XCTAssertTrue(updates.isEmpty)
     }
+
+    func testLoadInitialPairReadsExistingSessionStats() async {
+        let existingStats = SessionStats(listens: 2, correct: 1, practices: 3, elapsedSeconds: 42)
+        let dataService = MockTrainingDataService(sessionStatsByItemID: [1: existingStats])
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            nowProvider: { Date(timeIntervalSince1970: 100) }
+        )
+
+        await viewModel.loadInitialPair()
+
+        XCTAssertEqual(viewModel.sessionStats, existingStats)
+    }
+
+    func testRefreshElapsedTimeAddsSecondsSinceCardLoaded() async {
+        let clock = TestClock(now: Date(timeIntervalSince1970: 100))
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            nowProvider: { clock.now }
+        )
+
+        await viewModel.loadInitialPair()
+        clock.now = Date(timeIntervalSince1970: 165)
+        viewModel.refreshElapsedTime()
+
+        XCTAssertEqual(viewModel.sessionStats.elapsedSeconds, 65)
+    }
+
+    func testSessionStatsPersistAfterInteractions() async throws {
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            sessionDateProvider: { "2026-04-13" },
+            nowProvider: { Date(timeIntervalSince1970: 100) }
+        )
+
+        await viewModel.loadInitialPair()
+        try await viewModel.playRandomTest()
+        await viewModel.submitPerceptionGuess(.left)
+        try await viewModel.toggleRecording()
+        try await viewModel.toggleRecording()
+
+        let updates = await dataService.sessionStatsUpdates()
+        XCTAssertEqual(updates.last?.itemID, 1)
+        XCTAssertEqual(updates.last?.sessionDate, "2026-04-13")
+        XCTAssertEqual(updates.last?.stats.listens, 1)
+        XCTAssertEqual(updates.last?.stats.correct, 1)
+        XCTAssertEqual(updates.last?.stats.practices, 1)
+    }
+
+    func testLoadNextPairPersistsElapsedTimeBeforeSwitching() async {
+        let clock = TestClock(now: Date(timeIntervalSince1970: 100))
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            sessionDateProvider: { "2026-04-13" },
+            nowProvider: { clock.now }
+        )
+
+        await viewModel.loadInitialPair()
+        clock.now = Date(timeIntervalSince1970: 112)
+        await viewModel.loadNextPair()
+
+        let updates = await dataService.sessionStatsUpdates()
+        XCTAssertEqual(updates.last?.itemID, 1)
+        XCTAssertEqual(updates.last?.stats.elapsedSeconds, 12)
+        XCTAssertEqual(viewModel.currentPair?.id, 2)
+        XCTAssertEqual(viewModel.sessionStats, SessionStats())
+    }
 }
 
 actor MockTrainingDataService: TrainingDataServing {
     private let tagState: TrainingTagState
+    private let sessionStatsByItemID: [Int64: SessionStats]
     private let updateError: Error?
     private var updates: [(itemID: Int64, sessionDate: String, state: TrainingTagState)] = []
+    private var sessionUpdates: [(itemID: Int64, sessionDate: String, stats: SessionStats, isSaved: Bool, isHard: Bool)] = []
 
     init(
         tagState: TrainingTagState = TrainingTagState(isSaved: false, isHard: false),
+        sessionStatsByItemID: [Int64: SessionStats] = [:],
         updateError: Error? = nil
     ) {
         self.tagState = tagState
+        self.sessionStatsByItemID = sessionStatsByItemID
         self.updateError = updateError
     }
 
-    func fetchNextPair(afterID _: Int64?) async throws -> PhonePair? {
-        PhonePair(
-            id: 1,
-            phonemeContrast: "ʌ-æ",
-            tier: .word,
-            difficulty: 1,
-            leftText: "but",
-            leftIPA: "/bʌt/",
-            rightText: "bat",
-            rightIPA: "/bæt/"
-        )
+    func fetchNextPair(afterID: Int64?) async throws -> PhonePair? {
+        switch afterID {
+        case 1:
+            PhonePair(
+                id: 2,
+                phonemeContrast: "ɪ-iː",
+                tier: .word,
+                difficulty: 1,
+                leftText: "ship",
+                leftIPA: "/ʃɪp/",
+                rightText: "sheep",
+                rightIPA: "/ʃiːp/"
+            )
+        default:
+            PhonePair(
+                id: 1,
+                phonemeContrast: "ʌ-æ",
+                tier: .word,
+                difficulty: 1,
+                leftText: "but",
+                leftIPA: "/bʌt/",
+                rightText: "bat",
+                rightIPA: "/bæt/"
+            )
+        }
     }
 
     func fetchPairTagState(for _: Int64) async throws -> TrainingTagState {
@@ -242,6 +338,32 @@ actor MockTrainingDataService: TrainingDataServing {
 
     func tagUpdates() -> [(itemID: Int64, sessionDate: String, state: TrainingTagState)] {
         updates
+    }
+
+    func fetchPairSessionStats(for itemID: Int64, sessionDate _: String) async throws -> SessionStats {
+        if let latest = sessionUpdates.last(where: { $0.itemID == itemID })?.stats {
+            return latest
+        }
+
+        return sessionStatsByItemID[itemID] ?? SessionStats()
+    }
+
+    func updatePairSessionStats(
+        for itemID: Int64,
+        sessionDate: String,
+        stats: SessionStats,
+        isSaved: Bool,
+        isHard: Bool
+    ) async throws {
+        if let updateError {
+            throw updateError
+        }
+
+        sessionUpdates.append((itemID, sessionDate, stats, isSaved, isHard))
+    }
+
+    func sessionStatsUpdates() -> [(itemID: Int64, sessionDate: String, stats: SessionStats, isSaved: Bool, isHard: Bool)] {
+        sessionUpdates
     }
 }
 
@@ -321,5 +443,13 @@ actor MockTrainingAudioService: TrainingAudioServing {
 
     func stopCallCount() -> Int {
         stopCount
+    }
+}
+
+private final class TestClock: @unchecked Sendable {
+    var now: Date
+
+    init(now: Date) {
+        self.now = now
     }
 }
