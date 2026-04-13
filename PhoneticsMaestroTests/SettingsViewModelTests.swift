@@ -25,13 +25,28 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.availableVoiceNames, ["System Default", "Daniel"])
         XCTAssertEqual(viewModel.availableMicrophoneNames, ["System Default", "USB Mic"])
     }
+
+    func testSaveSettingsFailureRestoresSavingState() async {
+        let dataService = MockSettingsDataService(updateError: DataServiceError.database("save failed"))
+        let viewModel = SettingsViewModel(
+            dataService: dataService,
+            optionsProvider: MockSettingsOptionsProvider()
+        )
+
+        await viewModel.saveSettings()
+
+        XCTAssertFalse(viewModel.isSaving)
+        XCTAssertEqual(viewModel.errorMessage, "Database error: save failed")
+    }
 }
 
 actor MockSettingsDataService: SettingsDataServing {
     private var settings: AppSettings
+    private let updateError: Error?
 
-    init(settings: AppSettings = AppSettings()) {
+    init(settings: AppSettings = AppSettings(), updateError: Error? = nil) {
         self.settings = settings
+        self.updateError = updateError
     }
 
     func fetchSettings() async throws -> AppSettings {
@@ -39,6 +54,10 @@ actor MockSettingsDataService: SettingsDataServing {
     }
 
     func updateSettings(_ settings: AppSettings) async throws {
+        if let updateError {
+            throw updateError
+        }
+
         self.settings = settings
     }
 }

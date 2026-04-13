@@ -29,16 +29,32 @@ final class HistoryViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.sessions.map(\.sessionDate), ["2026-04-13", "2026-04-12"])
         XCTAssertNil(viewModel.errorMessage)
     }
+
+    func testLoadHistoryFailureExposesErrorMessage() async {
+        let dataService = MockHistoryDataService(fetchError: DataServiceError.database("history failed"))
+        let viewModel = HistoryViewModel(dataService: dataService)
+
+        await viewModel.loadHistory()
+
+        XCTAssertEqual(viewModel.sessions, [])
+        XCTAssertEqual(viewModel.errorMessage, "Database error: history failed")
+    }
 }
 
 actor MockHistoryDataService: HistoryDataServing {
     private let summaries: [HistorySessionSummary]
+    private let fetchError: Error?
 
-    init(summaries: [HistorySessionSummary]) {
+    init(summaries: [HistorySessionSummary] = [], fetchError: Error? = nil) {
         self.summaries = summaries
+        self.fetchError = fetchError
     }
 
     func fetchHistorySessionSummaries() async throws -> [HistorySessionSummary] {
-        summaries
+        if let fetchError {
+            throw fetchError
+        }
+
+        return summaries
     }
 }
