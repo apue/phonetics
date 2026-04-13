@@ -119,6 +119,25 @@ actor DataService {
         }
     }
 
+    func fetchHistorySessionSummaries() throws -> [HistorySessionSummary] {
+        try withDatabase { db in
+            try HistorySessionSummary.fetchAll(
+                db,
+                sql: """
+                SELECT
+                    session_date AS sessionDate,
+                    SUM(listen_count) AS totalListens,
+                    SUM(correct_count) AS totalCorrect,
+                    SUM(practice_count) AS totalPractices,
+                    SUM(time_spent_sec) AS totalTimeSpentSec
+                FROM user_progress
+                GROUP BY session_date
+                ORDER BY session_date DESC
+                """
+            )
+        }
+    }
+
     func updatePairTagState(
         for itemID: Int64,
         sessionDate: String,
@@ -469,3 +488,4 @@ actor DataService {
 }
 
 extension DataService: TrainingDataServing {}
+extension DataService: HistoryDataServing {}
