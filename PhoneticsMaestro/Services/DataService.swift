@@ -230,3 +230,5 @@ actor DataService {
         )
     }
 }
+
+extension DataService: TrainingDataServing {}

@@ -255,3 +255,13 @@ actor AudioService {
         }
     }
 }
+
+extension AudioService: TrainingAudioServing {
+    func playRandomTest(options: [String]) async throws -> Int {
+        try await playRandomTest(options: options, voiceIdentifier: nil, rate: 1.0)
+    }
+
+    func playStandard(for text: String) async throws {
+        try await playStandard(for: text, voiceIdentifier: nil, rate: 1.0)
+    }
+}
