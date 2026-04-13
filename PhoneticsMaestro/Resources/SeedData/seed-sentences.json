@@ -1,0 +1,66 @@
+{
+  "$schema": "seed-sentences",
+  "version": "1.0",
+  "sentences": [
+    {
+      "text": "Pick it up.",
+      "ipa": "/pɪk‿ɪt‿ʌp/",
+      "phenomenon": "linking",
+      "notes": "Consonant-vowel linking across pick it and it up."
+    },
+    {
+      "text": "Turn it on.",
+      "ipa": "/tɜːn‿ɪt‿ɒn/",
+      "phenomenon": "linking",
+      "notes": "Link /n/ into the following vowel at both word boundaries."
+    },
+    {
+      "text": "Last time we met.",
+      "ipa": "/lɑːs taɪm wi met/",
+      "phenomenon": "elision",
+      "notes": "The /t/ in last is often unreleased before time."
+    },
+    {
+      "text": "I used to know.",
+      "ipa": "/aɪ juːs tə nəʊ/",
+      "phenomenon": "elision",
+      "notes": "The /d/ in used to is commonly elided in connected speech."
+    },
+    {
+      "text": "I need a cup of tea.",
+      "ipa": "/aɪ niːd ə kʌp ə tiː/",
+      "phenomenon": "reduction",
+      "notes": "Reduce of to /ə/ in fast speech."
+    },
+    {
+      "text": "What are you doing?",
+      "ipa": "/wɒt ə juː duːɪŋ/",
+      "phenomenon": "reduction",
+      "notes": "Weak forms compress are you in natural speech."
+    },
+    {
+      "text": "You finished.",
+      "ipa": "/juː ˈfɪnɪʃt./",
+      "phenomenon": "intonation",
+      "notes": "Statement contour falls at the end."
+    },
+    {
+      "text": "You finished?",
+      "ipa": "/juː ˈfɪnɪʃt?/",
+      "phenomenon": "intonation",
+      "notes": "Question contour rises at the end."
+    },
+    {
+      "text": "I bought the record yesterday.",
+      "ipa": "/aɪ bɔːt ðə ˈrekɔːd ˈjestədeɪ/",
+      "phenomenon": "stress",
+      "notes": "Noun record carries stress on the first syllable."
+    },
+    {
+      "text": "Please record the meeting.",
+      "ipa": "/pliːz rɪˈkɔːd ðə ˈmiːtɪŋ/",
+      "phenomenon": "stress",
+      "notes": "Verb record shifts stress to the second syllable."
+    }
+  ]
+}

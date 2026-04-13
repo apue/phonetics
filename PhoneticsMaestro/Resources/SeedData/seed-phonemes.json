@@ -1,0 +1,246 @@
+{
+  "$schema": "seed-phonemes",
+  "version": "1.0",
+  "phoneme_pairs": [
+    {
+      "contrast": "ʌ-æ",
+      "phoneme_a": {
+        "symbol": "ʌ",
+        "example": "cup",
+        "description": "Open-mid back unrounded vowel"
+      },
+      "phoneme_b": {
+        "symbol": "æ",
+        "example": "cat",
+        "description": "Near-open front unrounded vowel"
+      },
+      "word_pairs": [
+        { "word_a": { "text": "but", "ipa": "/bʌt/" }, "word_b": { "text": "bat", "ipa": "/bæt/" }, "difficulty": 1 },
+        { "word_a": { "text": "cut", "ipa": "/kʌt/" }, "word_b": { "text": "cat", "ipa": "/kæt/" }, "difficulty": 1 },
+        { "word_a": { "text": "hut", "ipa": "/hʌt/" }, "word_b": { "text": "hat", "ipa": "/hæt/" }, "difficulty": 1 },
+        { "word_a": { "text": "luck", "ipa": "/lʌk/" }, "word_b": { "text": "lack", "ipa": "/læk/" }, "difficulty": 2 },
+        { "word_a": { "text": "mud", "ipa": "/mʌd/" }, "word_b": { "text": "mad", "ipa": "/mæd/" }, "difficulty": 2 }
+      ]
+    },
+    {
+      "contrast": "ɪ-iː",
+      "phoneme_a": {
+        "symbol": "ɪ",
+        "example": "sit",
+        "description": "Near-close near-front unrounded vowel"
+      },
+      "phoneme_b": {
+        "symbol": "iː",
+        "example": "seat",
+        "description": "Close front unrounded vowel"
+      },
+      "word_pairs": [
+        { "word_a": { "text": "bit", "ipa": "/bɪt/" }, "word_b": { "text": "beat", "ipa": "/biːt/" }, "difficulty": 1 },
+        { "word_a": { "text": "fit", "ipa": "/fɪt/" }, "word_b": { "text": "feet", "ipa": "/fiːt/" }, "difficulty": 1 },
+        { "word_a": { "text": "hit", "ipa": "/hɪt/" }, "word_b": { "text": "heat", "ipa": "/hiːt/" }, "difficulty": 1 },
+        { "word_a": { "text": "sit", "ipa": "/sɪt/" }, "word_b": { "text": "seat", "ipa": "/siːt/" }, "difficulty": 2 },
+        { "word_a": { "text": "ship", "ipa": "/ʃɪp/" }, "word_b": { "text": "sheep", "ipa": "/ʃiːp/" }, "difficulty": 2 }
+      ]
+    },
+    {
+      "contrast": "e-æ",
+      "phoneme_a": {
+        "symbol": "e",
+        "example": "pen",
+        "description": "Close-mid front unrounded vowel"
+      },
+      "phoneme_b": {
+        "symbol": "æ",
+        "example": "pan",
+        "description": "Near-open front unrounded vowel"
+      },
+      "word_pairs": [
+        { "word_a": { "text": "bet", "ipa": "/bet/" }, "word_b": { "text": "bat", "ipa": "/bæt/" }, "difficulty": 1 },
+        { "word_a": { "text": "set", "ipa": "/set/" }, "word_b": { "text": "sat", "ipa": "/sæt/" }, "difficulty": 1 },
+        { "word_a": { "text": "pen", "ipa": "/pen/" }, "word_b": { "text": "pan", "ipa": "/pæn/" }, "difficulty": 1 },
+        { "word_a": { "text": "met", "ipa": "/met/" }, "word_b": { "text": "mat", "ipa": "/mæt/" }, "difficulty": 2 },
+        { "word_a": { "text": "head", "ipa": "/hed/" }, "word_b": { "text": "had", "ipa": "/hæd/" }, "difficulty": 2 }
+      ]
+    },
+    {
+      "contrast": "ɒ-ʌ",
+      "phoneme_a": {
+        "symbol": "ɒ",
+        "example": "hot",
+        "description": "Open back rounded vowel"
+      },
+      "phoneme_b": {
+        "symbol": "ʌ",
+        "example": "hut",
+        "description": "Open-mid back unrounded vowel"
+      },
+      "word_pairs": [
+        { "word_a": { "text": "cop", "ipa": "/kɒp/" }, "word_b": { "text": "cup", "ipa": "/kʌp/" }, "difficulty": 1 },
+        { "word_a": { "text": "hot", "ipa": "/hɒt/" }, "word_b": { "text": "hut", "ipa": "/hʌt/" }, "difficulty": 1 },
+        { "word_a": { "text": "shot", "ipa": "/ʃɒt/" }, "word_b": { "text": "shut", "ipa": "/ʃʌt/" }, "difficulty": 2 },
+        { "word_a": { "text": "lock", "ipa": "/lɒk/" }, "word_b": { "text": "luck", "ipa": "/lʌk/" }, "difficulty": 2 },
+        { "word_a": { "text": "not", "ipa": "/nɒt/" }, "word_b": { "text": "nut", "ipa": "/nʌt/" }, "difficulty": 2 }
+      ]
+    },
+    {
+      "contrast": "ʊ-uː",
+      "phoneme_a": {
+        "symbol": "ʊ",
+        "example": "book",
+        "description": "Near-close near-back rounded vowel"
+      },
+      "phoneme_b": {
+        "symbol": "uː",
+        "example": "food",
+        "description": "Close back rounded vowel"
+      },
+      "word_pairs": [
+        { "word_a": { "text": "pull", "ipa": "/pʊl/" }, "word_b": { "text": "pool", "ipa": "/puːl/" }, "difficulty": 1 },
+        { "word_a": { "text": "full", "ipa": "/fʊl/" }, "word_b": { "text": "fool", "ipa": "/fuːl/" }, "difficulty": 1 },
+        { "word_a": { "text": "look", "ipa": "/lʊk/" }, "word_b": { "text": "Luke", "ipa": "/luːk/" }, "difficulty": 2 },
+        { "word_a": { "text": "should", "ipa": "/ʃʊd/" }, "word_b": { "text": "shoed", "ipa": "/ʃuːd/" }, "difficulty": 2 },
+        { "word_a": { "text": "could", "ipa": "/kʊd/" }, "word_b": { "text": "cooed", "ipa": "/kuːd/" }, "difficulty": 2 }
+      ]
+    },
+    {
+      "contrast": "l-r",
+      "phoneme_a": {
+        "symbol": "l",
+        "example": "light",
+        "description": "Voiced alveolar lateral approximant"
+      },
+      "phoneme_b": {
+        "symbol": "r",
+        "example": "right",
+        "description": "Voiced alveolar approximant"
+      },
+      "word_pairs": [
+        { "word_a": { "text": "light", "ipa": "/laɪt/" }, "word_b": { "text": "right", "ipa": "/raɪt/" }, "difficulty": 1 },
+        { "word_a": { "text": "lead", "ipa": "/liːd/" }, "word_b": { "text": "read", "ipa": "/riːd/" }, "difficulty": 1 },
+        { "word_a": { "text": "long", "ipa": "/lɒŋ/" }, "word_b": { "text": "wrong", "ipa": "/rɒŋ/" }, "difficulty": 2 },
+        { "word_a": { "text": "fly", "ipa": "/flaɪ/" }, "word_b": { "text": "fry", "ipa": "/fraɪ/" }, "difficulty": 2 },
+        { "word_a": { "text": "glass", "ipa": "/ɡlæs/" }, "word_b": { "text": "grass", "ipa": "/ɡræs/" }, "difficulty": 2 }
+      ]
+    },
+    {
+      "contrast": "θ-s",
+      "phoneme_a": {
+        "symbol": "θ",
+        "example": "think",
+        "description": "Voiceless dental fricative"
+      },
+      "phoneme_b": {
+        "symbol": "s",
+        "example": "sink",
+        "description": "Voiceless alveolar fricative"
+      },
+      "word_pairs": [
+        { "word_a": { "text": "think", "ipa": "/θɪŋk/" }, "word_b": { "text": "sink", "ipa": "/sɪŋk/" }, "difficulty": 1 },
+        { "word_a": { "text": "thick", "ipa": "/θɪk/" }, "word_b": { "text": "sick", "ipa": "/sɪk/" }, "difficulty": 1 },
+        { "word_a": { "text": "math", "ipa": "/mæθ/" }, "word_b": { "text": "mass", "ipa": "/mæs/" }, "difficulty": 2 },
+        { "word_a": { "text": "path", "ipa": "/pɑːθ/" }, "word_b": { "text": "pass", "ipa": "/pɑːs/" }, "difficulty": 2 },
+        { "word_a": { "text": "thought", "ipa": "/θɔːt/" }, "word_b": { "text": "sort", "ipa": "/sɔːt/" }, "difficulty": 3 }
+      ]
+    },
+    {
+      "contrast": "ð-z",
+      "phoneme_a": {
+        "symbol": "ð",
+        "example": "then",
+        "description": "Voiced dental fricative"
+      },
+      "phoneme_b": {
+        "symbol": "z",
+        "example": "zen",
+        "description": "Voiced alveolar fricative"
+      },
+      "word_pairs": [
+        { "word_a": { "text": "then", "ipa": "/ðen/" }, "word_b": { "text": "zen", "ipa": "/zen/" }, "difficulty": 1 },
+        { "word_a": { "text": "breathe", "ipa": "/briːð/" }, "word_b": { "text": "breeze", "ipa": "/briːz/" }, "difficulty": 2 },
+        { "word_a": { "text": "bathe", "ipa": "/beɪð/" }, "word_b": { "text": "bays", "ipa": "/beɪz/" }, "difficulty": 2 },
+        { "word_a": { "text": "clothe", "ipa": "/kləʊð/" }, "word_b": { "text": "close", "ipa": "/kləʊz/" }, "difficulty": 2 },
+        { "word_a": { "text": "teethe", "ipa": "/tiːð/" }, "word_b": { "text": "tease", "ipa": "/tiːz/" }, "difficulty": 3 }
+      ]
+    },
+    {
+      "contrast": "n-ŋ",
+      "phoneme_a": {
+        "symbol": "n",
+        "example": "sin",
+        "description": "Voiced alveolar nasal"
+      },
+      "phoneme_b": {
+        "symbol": "ŋ",
+        "example": "sing",
+        "description": "Voiced velar nasal"
+      },
+      "word_pairs": [
+        { "word_a": { "text": "sin", "ipa": "/sɪn/" }, "word_b": { "text": "sing", "ipa": "/sɪŋ/" }, "difficulty": 1 },
+        { "word_a": { "text": "ban", "ipa": "/bæn/" }, "word_b": { "text": "bang", "ipa": "/bæŋ/" }, "difficulty": 1 },
+        { "word_a": { "text": "thin", "ipa": "/θɪn/" }, "word_b": { "text": "thing", "ipa": "/θɪŋ/" }, "difficulty": 2 },
+        { "word_a": { "text": "win", "ipa": "/wɪn/" }, "word_b": { "text": "wing", "ipa": "/wɪŋ/" }, "difficulty": 2 },
+        { "word_a": { "text": "run", "ipa": "/rʌn/" }, "word_b": { "text": "rung", "ipa": "/rʌŋ/" }, "difficulty": 2 }
+      ]
+    },
+    {
+      "contrast": "v-w",
+      "phoneme_a": {
+        "symbol": "v",
+        "example": "vine",
+        "description": "Voiced labiodental fricative"
+      },
+      "phoneme_b": {
+        "symbol": "w",
+        "example": "wine",
+        "description": "Voiced labiovelar approximant"
+      },
+      "word_pairs": [
+        { "word_a": { "text": "vine", "ipa": "/vaɪn/" }, "word_b": { "text": "wine", "ipa": "/waɪn/" }, "difficulty": 1 },
+        { "word_a": { "text": "vet", "ipa": "/vet/" }, "word_b": { "text": "wet", "ipa": "/wet/" }, "difficulty": 1 },
+        { "word_a": { "text": "vest", "ipa": "/vest/" }, "word_b": { "text": "west", "ipa": "/west/" }, "difficulty": 1 },
+        { "word_a": { "text": "veil", "ipa": "/veɪl/" }, "word_b": { "text": "wail", "ipa": "/weɪl/" }, "difficulty": 2 },
+        { "word_a": { "text": "vow", "ipa": "/vaʊ/" }, "word_b": { "text": "wow", "ipa": "/waʊ/" }, "difficulty": 2 }
+      ]
+    },
+    {
+      "contrast": "ɜː-ɑː",
+      "phoneme_a": {
+        "symbol": "ɜː",
+        "example": "bird",
+        "description": "Open-mid central unrounded vowel"
+      },
+      "phoneme_b": {
+        "symbol": "ɑː",
+        "example": "bard",
+        "description": "Open back unrounded vowel"
+      },
+      "word_pairs": [
+        { "word_a": { "text": "bird", "ipa": "/bɜːd/" }, "word_b": { "text": "bard", "ipa": "/bɑːd/" }, "difficulty": 1 },
+        { "word_a": { "text": "fur", "ipa": "/fɜː/" }, "word_b": { "text": "far", "ipa": "/fɑː/" }, "difficulty": 1 },
+        { "word_a": { "text": "her", "ipa": "/hɜː/" }, "word_b": { "text": "ha", "ipa": "/hɑː/" }, "difficulty": 2 },
+        { "word_a": { "text": "stir", "ipa": "/stɜː/" }, "word_b": { "text": "star", "ipa": "/stɑː/" }, "difficulty": 2 },
+        { "word_a": { "text": "fern", "ipa": "/fɜːn/" }, "word_b": { "text": "barn", "ipa": "/bɑːn/" }, "difficulty": 3 }
+      ]
+    },
+    {
+      "contrast": "æ-eɪ",
+      "phoneme_a": {
+        "symbol": "æ",
+        "example": "man",
+        "description": "Near-open front unrounded vowel"
+      },
+      "phoneme_b": {
+        "symbol": "eɪ",
+        "example": "main",
+        "description": "Closing diphthong"
+      },
+      "word_pairs": [
+        { "word_a": { "text": "man", "ipa": "/mæn/" }, "word_b": { "text": "main", "ipa": "/meɪn/" }, "difficulty": 1 },
+        { "word_a": { "text": "pan", "ipa": "/pæn/" }, "word_b": { "text": "pain", "ipa": "/peɪn/" }, "difficulty": 1 },
+        { "word_a": { "text": "ran", "ipa": "/ræn/" }, "word_b": { "text": "rain", "ipa": "/reɪn/" }, "difficulty": 1 },
+        { "word_a": { "text": "plan", "ipa": "/plæn/" }, "word_b": { "text": "plain", "ipa": "/pleɪn/" }, "difficulty": 2 },
+        { "word_a": { "text": "bad", "ipa": "/bæd/" }, "word_b": { "text": "bade", "ipa": "/beɪd/" }, "difficulty": 2 }
+      ]
+    }
+  ]
+}
