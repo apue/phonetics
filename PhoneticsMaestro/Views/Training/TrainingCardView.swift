@@ -18,6 +18,7 @@ struct TrainingCardView: View {
                 Text("Contrast \(pair.phonemeContrast) • Tier \(pair.tier.rawValue)")
                     .foregroundStyle(.secondary)
 
+                taggingSection
                 perceptionSection(pair: pair)
                 practiceSection(pair: pair)
             } else {
@@ -64,6 +65,34 @@ struct TrainingCardView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(viewModel.errorMessage ?? "")
+        }
+    }
+
+    private var taggingSection: some View {
+        HStack(spacing: 12) {
+            Button(viewModel.isSaved ? "★ Saved" : "☆ Save") {
+                Task {
+                    do {
+                        try await viewModel.toggleSaved()
+                    } catch {
+                        viewModel.errorMessage = error.localizedDescription
+                    }
+                }
+            }
+            .buttonStyle(.bordered)
+            .tint(viewModel.isSaved ? .yellow : .secondary)
+
+            Button(viewModel.isHard ? "! Hard" : "Mark Hard") {
+                Task {
+                    do {
+                        try await viewModel.toggleHard()
+                    } catch {
+                        viewModel.errorMessage = error.localizedDescription
+                    }
+                }
+            }
+            .buttonStyle(.bordered)
+            .tint(viewModel.isHard ? .orange : .secondary)
         }
     }
 

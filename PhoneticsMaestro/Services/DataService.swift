@@ -65,6 +65,70 @@ actor DataService {
         }
     }
 
+    func fetchPairTagState(for itemID: Int64) throws -> TrainingTagState {
+        try withDatabase { db in
+            let row = try Row.fetchOne(
+                db,
+                sql: """
+                SELECT is_saved, is_hard
+                FROM user_progress
+                WHERE item_type = 'pair' AND item_id = ?
+                ORDER BY updated_at DESC, id DESC
+                LIMIT 1
+                """,
+                arguments: [itemID]
+            )
+
+            return TrainingTagState(
+                isSaved: row?["is_saved"] ?? false,
+                isHard: row?["is_hard"] ?? false
+            )
+        }
+    }
+
+    func updatePairTagState(
+        for itemID: Int64,
+        sessionDate: String,
+        isSaved: Bool,
+        isHard: Bool
+    ) throws {
+        try withDatabaseWrite { db in
+            if let progressID = try Int64.fetchOne(
+                db,
+                sql: """
+                SELECT id
+                FROM user_progress
+                WHERE item_type = 'pair' AND item_id = ? AND session_date = ?
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                arguments: [itemID, sessionDate]
+            ) {
+                try db.execute(
+                    sql: """
+                    UPDATE user_progress
+                    SET is_saved = ?, is_hard = ?, updated_at = datetime('now')
+                    WHERE id = ?
+                    """,
+                    arguments: [isSaved, isHard, progressID]
+                )
+            } else {
+                try db.execute(
+                    sql: """
+                    INSERT INTO user_progress (
+                        item_type,
+                        item_id,
+                        session_date,
+                        is_saved,
+                        is_hard
+                    ) VALUES ('pair', ?, ?, ?, ?)
+                    """,
+                    arguments: [itemID, sessionDate, isSaved, isHard]
+                )
+            }
+        }
+    }
+
     private func createSupportDirectories() throws {
         do {
             try fileManager.createDirectory(at: appSupportURL, withIntermediateDirectories: true)
@@ -177,6 +241,20 @@ actor DataService {
 
         do {
             return try databaseQueue.read(operation)
+        } catch let error as DataServiceError {
+            throw error
+        } catch {
+            throw DataServiceError.database(error.localizedDescription)
+        }
+    }
+
+    private func withDatabaseWrite(_ operation: (Database) throws -> Void) throws {
+        guard let databaseQueue else {
+            throw DataServiceError.databaseUnavailable
+        }
+
+        do {
+            try databaseQueue.write(operation)
         } catch let error as DataServiceError {
             throw error
         } catch {

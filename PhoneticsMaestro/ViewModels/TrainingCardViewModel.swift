@@ -12,6 +12,8 @@ final class TrainingCardViewModel {
     var selectedPracticeTarget: PairOption = .left
     var isRecording = false
     var isABABLooping = false
+    var isSaved = false
+    var isHard = false
 
     private let dataService: any TrainingDataServing
     private let audioService: any TrainingAudioServing
@@ -152,6 +154,50 @@ final class TrainingCardViewModel {
         isABABLooping = false
     }
 
+    func toggleSaved() async throws {
+        guard let currentPair else {
+            errorMessage = "Load a training pair before saving."
+            return
+        }
+
+        let nextValue = !isSaved
+
+        do {
+            try await dataService.updatePairTagState(
+                for: currentPair.id,
+                sessionDate: sessionDateProvider(),
+                isSaved: nextValue,
+                isHard: isHard
+            )
+            isSaved = nextValue
+        } catch {
+            isSaved = !nextValue
+            throw error
+        }
+    }
+
+    func toggleHard() async throws {
+        guard let currentPair else {
+            errorMessage = "Load a training pair before marking difficulty."
+            return
+        }
+
+        let nextValue = !isHard
+
+        do {
+            try await dataService.updatePairTagState(
+                for: currentPair.id,
+                sessionDate: sessionDateProvider(),
+                isSaved: isSaved,
+                isHard: nextValue
+            )
+            isHard = nextValue
+        } catch {
+            isHard = !nextValue
+            throw error
+        }
+    }
+
     private func loadPair(afterID: Int64?, forceReload: Bool) async {
         guard !isLoading else {
             return
@@ -165,12 +211,21 @@ final class TrainingCardViewModel {
         defer { isLoading = false }
 
         do {
-            currentPair = try await dataService.fetchNextPair(afterID: afterID)
+            let pair = try await dataService.fetchNextPair(afterID: afterID)
+            currentPair = pair
             pendingAnswer = nil
             perceptionState = .idle
             selectedPracticeTarget = .left
             isRecording = false
             isABABLooping = false
+            if let pair {
+                let tagState = try await dataService.fetchPairTagState(for: pair.id)
+                isSaved = tagState.isSaved
+                isHard = tagState.isHard
+            } else {
+                isSaved = false
+                isHard = false
+            }
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
