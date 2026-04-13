@@ -97,6 +97,47 @@ final class DataServiceTests: XCTestCase {
         XCTAssertEqual(updatedTags, TrainingTagState(isSaved: true, isHard: false))
     }
 
+    func testFetchHistorySessionSummariesAggregatesByDate() async throws {
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = DataService(appSupportURL: appSupportURL)
+        try await service.initialize()
+
+        try await service.updatePairSessionStats(
+            for: 1,
+            sessionDate: "2026-04-12",
+            stats: SessionStats(listens: 2, correct: 1, practices: 1, elapsedSeconds: 40),
+            isSaved: false,
+            isHard: false
+        )
+        try await service.updatePairSessionStats(
+            for: 2,
+            sessionDate: "2026-04-12",
+            stats: SessionStats(listens: 3, correct: 2, practices: 2, elapsedSeconds: 50),
+            isSaved: false,
+            isHard: false
+        )
+        try await service.updatePairSessionStats(
+            for: 3,
+            sessionDate: "2026-04-13",
+            stats: SessionStats(listens: 4, correct: 3, practices: 1, elapsedSeconds: 70),
+            isSaved: false,
+            isHard: false
+        )
+
+        let summaries = try await service.fetchHistorySessionSummaries()
+        XCTAssertEqual(summaries.map(\.sessionDate), ["2026-04-13", "2026-04-12"])
+        XCTAssertEqual(summaries[0].totalListens, 4)
+        XCTAssertEqual(summaries[0].totalCorrect, 3)
+        XCTAssertEqual(summaries[0].totalPractices, 1)
+        XCTAssertEqual(summaries[0].totalTimeSpentSec, 70)
+        XCTAssertEqual(summaries[1].totalListens, 5)
+        XCTAssertEqual(summaries[1].totalCorrect, 3)
+        XCTAssertEqual(summaries[1].totalPractices, 3)
+        XCTAssertEqual(summaries[1].totalTimeSpentSec, 90)
+    }
+
     private func makeTemporaryDirectory() -> URL {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
