@@ -4,7 +4,7 @@ struct RootView: View {
     @Bindable var viewModel: AppViewModel
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $viewModel.splitViewVisibility) {
             List(AppScreen.allCases, selection: $viewModel.selectedScreen) { screen in
                 Label(screen.title, systemImage: screen.systemImage)
                     .tag(screen)
@@ -13,6 +13,14 @@ struct RootView: View {
         } detail: {
             detailView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Button(viewModel.isSidebarCollapsed ? "Show Sidebar" : "Hide Sidebar") {
+                    viewModel.toggleSidebar()
+                }
+                .keyboardShortcut("\\", modifiers: [.command])
+            }
         }
         .overlay {
             if viewModel.isInitializing {

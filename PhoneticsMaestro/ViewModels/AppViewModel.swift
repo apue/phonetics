@@ -1,12 +1,18 @@
 import Observation
+import SwiftUI
 
 @MainActor
 @Observable
 final class AppViewModel {
     var selectedScreen: AppScreen = .welcome
+    var splitViewVisibility: NavigationSplitViewVisibility = .all
     var isInitializing = false
     var isInitialized = false
     var errorMessage: String?
+
+    var isSidebarCollapsed: Bool {
+        splitViewVisibility == .detailOnly
+    }
 
     let trainingCardViewModel: TrainingCardViewModel
 
@@ -37,5 +43,9 @@ final class AppViewModel {
         Task {
             await trainingCardViewModel.loadInitialPairIfNeeded()
         }
+    }
+
+    func toggleSidebar() {
+        splitViewVisibility = isSidebarCollapsed ? .all : .detailOnly
     }
 }
