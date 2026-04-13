@@ -243,6 +243,7 @@ final class TrainingCardViewModel {
         defer { isLoading = false }
 
         do {
+            try await prepareForPairNavigation()
             try await persistCurrentPairProgressIfNeeded()
             let pair = try await dataService.fetchNextPair(afterID: afterID)
             try await applyLoadedPair(pair)
@@ -264,11 +265,25 @@ final class TrainingCardViewModel {
         defer { isLoading = false }
 
         do {
+            try await prepareForPairNavigation()
             try await persistCurrentPairProgressIfNeeded()
             let pair = try await dataService.fetchPreviousPair(beforeID: currentPair?.id)
             try await applyLoadedPair(pair)
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    private func prepareForPairNavigation() async throws {
+        if isABABLooping {
+            await audioService.stop()
+            isABABLooping = false
+        }
+
+        if isRecording {
+            _ = try await audioService.stopRecording()
+            isRecording = false
+            sessionStats.practices += 1
         }
     }
 

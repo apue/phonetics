@@ -291,6 +291,76 @@ final class TrainingCardViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.currentPair?.id, 2)
         XCTAssertEqual(viewModel.sessionStats, SessionStats())
     }
+
+    func testLoadNextPairStopsABABLoopBeforeSwitching() async throws {
+        let clock = TestClock(now: Date(timeIntervalSince1970: 100))
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            sessionDateProvider: { "2026-04-13" },
+            nowProvider: { clock.now }
+        )
+
+        await viewModel.loadInitialPair()
+        try await viewModel.toggleRecording()
+        try await viewModel.toggleRecording()
+        try await viewModel.toggleABABLoop()
+        await viewModel.loadNextPair()
+
+        let stopCount = await audioService.stopCallCount()
+        XCTAssertEqual(stopCount, 1)
+        XCTAssertFalse(viewModel.isABABLooping)
+        XCTAssertEqual(viewModel.currentPair?.id, 2)
+    }
+
+    func testLoadNextPairStopsRecordingBeforeSwitchingAndCountsPractice() async throws {
+        let clock = TestClock(now: Date(timeIntervalSince1970: 100))
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            sessionDateProvider: { "2026-04-13" },
+            nowProvider: { clock.now }
+        )
+
+        await viewModel.loadInitialPair()
+        try await viewModel.toggleRecording()
+        await viewModel.loadNextPair()
+
+        let stopRecordingCount = await audioService.stopRecordingCallCount()
+        let updates = await dataService.sessionStatsUpdates()
+        XCTAssertEqual(stopRecordingCount, 1)
+        XCTAssertEqual(updates.last?.itemID, 1)
+        XCTAssertEqual(updates.last?.stats.practices, 1)
+        XCTAssertFalse(viewModel.isRecording)
+        XCTAssertEqual(viewModel.currentPair?.id, 2)
+    }
+
+    func testLoadPreviousPairStopsABABLoopBeforeSwitching() async throws {
+        let clock = TestClock(now: Date(timeIntervalSince1970: 100))
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            sessionDateProvider: { "2026-04-13" },
+            nowProvider: { clock.now }
+        )
+
+        await viewModel.loadInitialPair()
+        try await viewModel.toggleRecording()
+        try await viewModel.toggleRecording()
+        try await viewModel.toggleABABLoop()
+        await viewModel.loadPreviousPair()
+
+        let stopCount = await audioService.stopCallCount()
+        XCTAssertEqual(stopCount, 1)
+        XCTAssertFalse(viewModel.isABABLooping)
+        XCTAssertEqual(viewModel.currentPair?.id, 2)
+    }
 }
 
 actor MockTrainingDataService: TrainingDataServing {
