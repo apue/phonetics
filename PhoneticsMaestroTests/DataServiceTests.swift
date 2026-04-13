@@ -138,6 +138,35 @@ final class DataServiceTests: XCTestCase {
         XCTAssertEqual(summaries[1].totalTimeSpentSec, 90)
     }
 
+    func testFetchSettingsReturnsDefaultsBeforeFirstSave() async throws {
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = DataService(appSupportURL: appSupportURL)
+        try await service.initialize()
+
+        let settings = try await service.fetchSettings()
+        XCTAssertEqual(settings, AppSettings())
+    }
+
+    func testUpdateSettingsPersistsVoiceMicrophoneAndABABInterval() async throws {
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = DataService(appSupportURL: appSupportURL)
+        try await service.initialize()
+
+        let updated = AppSettings(
+            preferredVoiceName: "Samantha",
+            preferredMicrophoneName: "Built-in Microphone",
+            ababIntervalMilliseconds: 450
+        )
+        try await service.updateSettings(updated)
+
+        let fetched = try await service.fetchSettings()
+        XCTAssertEqual(fetched, updated)
+    }
+
     private func makeTemporaryDirectory() -> URL {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)

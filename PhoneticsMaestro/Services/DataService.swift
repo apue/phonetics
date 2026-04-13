@@ -138,6 +138,49 @@ actor DataService {
         }
     }
 
+    func fetchSettings() throws -> AppSettings {
+        try withDatabase { db in
+            let row = try Row.fetchOne(
+                db,
+                sql: """
+                SELECT preferred_voice_name, preferred_microphone_name, abab_interval_ms
+                FROM app_settings
+                WHERE id = 1
+                """
+            )
+
+            return AppSettings(
+                preferredVoiceName: row?["preferred_voice_name"] ?? "System Default",
+                preferredMicrophoneName: row?["preferred_microphone_name"] ?? "System Default",
+                ababIntervalMilliseconds: row?["abab_interval_ms"] ?? 300
+            )
+        }
+    }
+
+    func updateSettings(_ settings: AppSettings) throws {
+        try withDatabaseWrite { db in
+            try db.execute(
+                sql: """
+                INSERT INTO app_settings (
+                    id,
+                    preferred_voice_name,
+                    preferred_microphone_name,
+                    abab_interval_ms
+                ) VALUES (1, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    preferred_voice_name = excluded.preferred_voice_name,
+                    preferred_microphone_name = excluded.preferred_microphone_name,
+                    abab_interval_ms = excluded.abab_interval_ms
+                """,
+                arguments: [
+                    settings.preferredVoiceName,
+                    settings.preferredMicrophoneName,
+                    settings.ababIntervalMilliseconds
+                ]
+            )
+        }
+    }
+
     func updatePairTagState(
         for itemID: Int64,
         sessionDate: String,
@@ -322,6 +365,15 @@ actor DataService {
             try db.create(index: "idx_progress_date", on: "user_progress", columns: ["session_date"])
         }
 
+        migrator.registerMigration("addAppSettings") { db in
+            try db.create(table: "app_settings", ifNotExists: true) { table in
+                table.column("id", .integer).primaryKey(onConflict: .replace)
+                table.column("preferred_voice_name", .text).notNull().defaults(to: "System Default")
+                table.column("preferred_microphone_name", .text).notNull().defaults(to: "System Default")
+                table.column("abab_interval_ms", .integer).notNull().defaults(to: 300)
+            }
+        }
+
         do {
             try migrator.migrate(queue)
         } catch {
@@ -489,3 +541,4 @@ actor DataService {
 
 extension DataService: TrainingDataServing {}
 extension DataService: HistoryDataServing {}
+extension DataService: SettingsDataServing {}
