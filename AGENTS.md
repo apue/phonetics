@@ -87,7 +87,7 @@ swift-format format -i -r Sources/
   6. Wait for automated checks to complete and inspect failures with `gh` CLI if needed.
   7. Perform code review before merge, prioritizing bugs, regressions, edge cases, and missing tests.
   8. Address review comments on the same branch, re-run local verification, and push updates.
-  9. Merge only after local checks pass, remote checks pass, review comments are addressed, and the user confirms.
+  9. Merge only after local checks pass, remote checks pass, review comments are addressed.
 - Prefer `gh` CLI for repository, PR, review, and Actions interactions.
 - Do not merge directly to `main` without an explicit user request.
 - When a task ends without merge, leave the branch pushed and the PR updated with the latest verified state.
