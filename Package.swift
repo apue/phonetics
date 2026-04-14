@@ -11,6 +11,10 @@ let package = Package(
         .library(
             name: "PhoneticsCore",
             targets: ["PhoneticsCore"]
+        ),
+        .executable(
+            name: "phoneticsctl",
+            targets: ["phoneticsctl"]
         )
     ],
     dependencies: [
@@ -33,6 +37,14 @@ let package = Package(
             resources: [
                 .process("Resources")
             ],
+            swiftSettings: [
+                .unsafeFlags(["-strict-concurrency=complete"])
+            ]
+        ),
+        .executableTarget(
+            name: "phoneticsctl",
+            dependencies: ["PhoneticsCore"],
+            path: "PhoneticsCLI",
             swiftSettings: [
                 .unsafeFlags(["-strict-concurrency=complete"])
             ]
