@@ -14,6 +14,8 @@
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Phonetics Maestro uses your microphone to record your pronunciation for practice and A/B playback.</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
 </dict>
