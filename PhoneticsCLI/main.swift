@@ -3,8 +3,15 @@ import PhoneticsCore
 
 let arguments = Array(CommandLine.arguments.dropFirst())
 
-switch arguments {
-case ["--gui"]:
+guard let command = CLICommand(arguments: arguments) else {
+    FileHandle.standardError.write(
+        Data("Usage: phoneticsctl --gui | phoneticsctl --headless <command>\n".utf8)
+    )
+    exit(1)
+}
+
+switch command {
+case .gui:
     do {
         let launcher = AppLauncher()
         let command = try launcher.guiLaunchCommand()
@@ -18,9 +25,9 @@ case ["--gui"]:
         FileHandle.standardError.write(Data("\(error)\n".utf8))
         exit(1)
     }
-default:
-    FileHandle.standardError.write(
-        Data("Usage: phoneticsctl --gui | phoneticsctl --headless <command>\n".utf8)
-    )
-    exit(1)
+case let .headless(headlessCommand):
+    let runner = HeadlessAcceptanceRunner()
+    let result = await runner.run(headlessCommand)
+    FileHandle.standardOutput.write(Data(result.output.utf8))
+    exit(result.exitCode)
 }
