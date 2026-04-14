@@ -1,196 +1,280 @@
 # ARCHITECTURE.md — Phonetics Maestro
 
-## 1. System Architecture
+## 1. Runtime Shape
 
-```
-┌──────────────────────────────────────────────────────────┐
-│                        SwiftUI Views                      │
-│  ┌────────────┐  ┌──────────────┐  ┌─────────┐  ┌──────┐│
-│  │ WelcomeView│  │TrainingCard  │  │ History │  │Settin││
-│  │            │  │View          │  │ View    │  │gsView││
-│  └─────┬──────┘  └──────┬───────┘  └────┬────┘  └──┬───┘│
-│        │                │               │           │     │
-│  ┌─────▼──────┐  ┌──────▼───────┐  ┌────▼───────────▼───┐│
-│  │            │  │TrainingCard  │  │  HistoryViewModel  ││
-│  │            │  │ViewModel     │  │  SettingsViewModel ││
-│  │            │  └──────┬───────┘  └────────┬───────────┘│
-│  │            │         │                   │             │
-├──┼────────────┼─────────┼───────────────────┼─────────────┤
-│  │   Service Layer (Actors)                 │             │
-│  │  ┌──────────────────┐  ┌─────────────────┐            │
-│  │  │  AudioService    │  │  DataService     │            │
-│  │  │  (singleton)     │  │  (singleton)     │            │
-│  │  │                  │  │                  │            │
-│  │  │  - TTS playback  │  │  - SQLite CRUD   │            │
-│  │  │  - Mic recording │  │  - Seed import   │            │
-│  │  │  - ABAB loop     │  │  - Stats update  │            │
-│  │  │  - State machine │  │  - Query pairs   │            │
-│  │  └──────────────────┘  └─────────────────┘            │
-├───────────────────────────────────────────────────────────┤
-│  Platform Layer                                           │
-│  AVAudioEngine  AVSpeechSynthesizer  SQLite  FileManager │
-└───────────────────────────────────────────────────────────┘
-```
+Phonetics Maestro is no longer a single SwiftPM executable pretending to be the whole app. The runtime is split into three layers:
 
-## 2. AudioService State Machine
-
-```
-                  ┌─────────┐
-                  │  idle   │◄──────────────────────┐
-                  └────┬────┘                       │
-                       │                            │
-            ┌──────────┼──────────┐                 │
-            │          │          │                 │
-            ▼          ▼          ▼                 │
-     ┌──────────┐ ┌────────┐ ┌───────────┐        │
-     │recording │ │playing │ │playingABAB│        │
-     │          │ │(source)│ │           │        │
-     └─────┬────┘ └───┬────┘ └─────┬─────┘        │
-           │          │            │               │
-           └──────────┴────────────┘               │
-                      │                            │
-                      └── stop() ──────────────────┘
-
-playing(source) where source = .standard | .userRecording | .randomTest
+```text
+┌────────────────────────────────────────────────────┐
+│                 PhoneticsMaestroApp                │
+│        Standard macOS .app host and window         │
+│  - PhoneticsMaestroApp.swift                       │
+│  - Info.plist                                      │
+│  - WindowGroup / App lifecycle                     │
+└──────────────────────────┬─────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────┐
+│                    PhoneticsCore                   │
+│         Shared product logic used by app + CLI     │
+│  - RootView / SwiftUI screens                      │
+│  - ViewModels                                      │
+│  - AudioService / DataService                      │
+│  - SeedDataImporter                                │
+│  - HeadlessAcceptanceRunner                        │
+│  - Models and resources                            │
+└──────────────────────────┬─────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────┐
+│                    phoneticsctl                    │
+│              Companion CLI entry point             │
+│  - --gui                                           │
+│  - --headless seed-check                           │
+│  - --headless db-summary                           │
+│  - --headless smoke-test                           │
+└────────────────────────────────────────────────────┘
 ```
 
-### State Transitions
+This split exists to satisfy two different launch modes cleanly:
 
-| From | To | Trigger | Guard |
-|------|----|---------|-------|
-| idle | recording | `startRecording()` | Mic permission granted |
-| recording | idle | `stopRecording()` | — |
-| idle | playing(.standard) | `playStandard(for:)` | — |
-| idle | playing(.userRecording) | `playUserRecording()` | Recording exists |
-| idle | playing(.randomTest) | `playRandomTest()` | — |
-| idle | playingABAB | `startABABLoop()` | Recording exists |
-| playing(*) | idle | Playback finished / `stop()` | — |
-| playingABAB | idle | `stop()` | — |
-| recording | playing(*) | ❌ ILLEGAL | — |
-| playing(*) | recording | ❌ ILLEGAL | — |
+- a real macOS `.app` for humans and Xcode
+- a stable CLI surface for automation, CI, and agent validation
 
-## 3. Data Flow
+## 2. Targets And Entry Points
 
-### 3.1 App Startup Sequence
+### 2.1 Shared Package
 
-```
-AppDelegate.init
-  └─► DataService.shared.initialize()
-        ├─► Create DB file if not exists
-        ├─► Run schema migrations
-        └─► Check if seed data loaded
-              └─► NO: SeedDataImporter.import(from: Bundle)
-                        ├─► Read seed-phonemes.json
-                        ├─► Read seed-sentences.json
-                        └─► INSERT into phonemes, words, pairs, sentences
+`Package.swift` defines:
+
+- library product: `PhoneticsCore`
+- executable product: `phoneticsctl`
+- test target: `PhoneticsMaestroTests`
+
+`PhoneticsCore` is built from the `PhoneticsMaestro/` directory and contains all shared runtime logic.
+
+### 2.2 GUI Host
+
+`PhoneticsMaestroApp/PhoneticsMaestroApp.swift` is the real app entry point:
+
+```text
+@main PhoneticsMaestroApp
+  └─ WindowGroup
+      └─ RootView(viewModel: AppViewModel())
+          └─ .task { await viewModel.initialize() }
 ```
 
-### 3.2 Training Session Flow
+This target owns the application bundle, `Info.plist`, privacy descriptions, and the normal macOS window lifecycle.
 
-```
-User taps "Begin"
-  └─► TrainingCardViewModel.loadNextPair()
-        └─► DataService.fetchPairs(contrast: "ʌ-æ")
-              └─► Returns [PhonePair] array
+### 2.3 CLI Host
 
-User taps "Random Test"
-  └─► TrainingCardViewModel.playRandomTest()
-        ├─► Pick A or B (50/50)
-        ├─► AudioService.play(text:, voice:)  // TTS
-        └─► Await user choice → update stats
+`PhoneticsCLI/main.swift` parses arguments and dispatches one of two paths:
 
-User taps "Record"
-  └─► AudioService.startRecording()
-        └─► Save to ~/Library/.../recordings/{sessionDate}/{pairId}.caf
+- `phoneticsctl --gui`
+  launches the app host via `AppLauncher`
+- `phoneticsctl --headless <command>`
+  runs a non-UI acceptance command via `HeadlessAcceptanceRunner`
 
-User taps "A/B" (ABAB Loop)
-  └─► AudioService.startABABLoop(standard: "but", recording: filePath)
-        └─► Loop: TTS("but") → 300ms → play(filePath) → 300ms → repeat
-```
+The CLI is intentionally thin. It should orchestrate, not duplicate, business logic.
 
-## 4. Seed Data JSON Schema
+## 3. UI Shell
 
-Files in `Resources/SeedData/`:
+The app shell lives in `PhoneticsMaestro/App/RootView.swift`.
 
-### seed-phonemes.json
+Current structure:
 
-```json
-{
-  "$schema": "seed-phonemes",
-  "version": "1.0",
-  "phoneme_pairs": [
-    {
-      "contrast": "ʌ-æ",
-      "phoneme_a": {
-        "symbol": "ʌ",
-        "example": "cup",
-        "description": "Open-mid back unrounded vowel"
-      },
-      "phoneme_b": {
-        "symbol": "æ",
-        "example": "cat",
-        "description": "Near-open front unrounded vowel"
-      },
-      "word_pairs": [
-        {
-          "word_a": { "text": "but", "ipa": "/bʌt/" },
-          "word_b": { "text": "bat", "ipa": "/bæt/" },
-          "difficulty": 1
-        }
-      ]
-    }
-  ]
-}
+- `NavigationSplitView`
+- sidebar destinations: `Welcome`, `Training`, `History`, `Settings`
+- toolbar sidebar toggle with `⌘+\`
+- initialization overlay and alert handling
+
+`AppViewModel` owns top-level app state:
+
+- selected screen
+- split view visibility
+- initialization state
+- shared `TrainingCardViewModel`
+
+Initialization currently happens in `AppViewModel.initialize()`:
+
+```text
+RootView task
+  └─ AppViewModel.initialize()
+      ├─ DataService.shared.initialize()
+      └─ TrainingCardViewModel.loadInitialPair()
 ```
 
-### seed-sentences.json
+## 4. Screen Responsibilities
 
-```json
-{
-  "$schema": "seed-sentences",
-  "version": "1.0",
-  "sentences": [
-    {
-      "text": "Pick it up.",
-      "ipa": "/pɪk‿ɪt‿ʌp/",
-      "phenomenon": "linking",
-      "notes": "Consonant-vowel linking at k‿ɪ and t‿ʌ junctions"
-    }
-  ]
-}
-```
+### 4.1 Welcome
 
-## 5. Key Dependencies (SPM)
+`WelcomeView` is the simple entry screen for:
 
-| Package | Purpose | Version |
-|---------|---------|---------|
-| [GRDB.swift](https://github.com/groue/GRDB.swift) | SQLite wrapper with Swift concurrency support | ~> 7.0 |
+- begin training
+- open history
+- open settings
 
-> Minimal dependency strategy: only GRDB for SQLite. Everything else uses Apple frameworks.
+### 4.2 Training
 
-## 6. File Storage Layout
+`TrainingCardView` + `TrainingCardViewModel` implement the core loop:
 
-```
+- minimal-pair display with IPA
+- random perception test
+- answer submission with success/error feedback
+- record toggle
+- single-track playback: `Standard`, `Me`
+- `A/B` loop playback
+- `Save` / `Hard` tagging
+- session stats: `LISTENS`, `CORRECT`, `PRACTICES`, `TIME`
+- card navigation and keyboard shortcuts
+
+### 4.3 History
+
+`HistoryView` + `HistoryViewModel` show session summaries loaded from SQLite.
+
+Current data includes:
+
+- session date
+- total time
+- correct/listen counts
+- practice count
+
+### 4.4 Settings
+
+`SettingsView` + `SettingsViewModel` manage persisted local preferences:
+
+- preferred TTS voice
+- preferred microphone
+- ABAB interval
+
+## 5. Service Layer
+
+The shared service layer lives under `PhoneticsMaestro/Services/`.
+
+### 5.1 DataService
+
+`DataService` is a singleton actor responsible for:
+
+- resolving application support paths
+- creating/opening the SQLite database
+- running schema setup and migrations
+- importing bundled seed data on first run
+- CRUD for pairs, tag state, settings, and history summaries
+- exposing lightweight query APIs for view models and headless commands
+
+Storage location:
+
+```text
 ~/Library/Application Support/PhoneticsMaestro/
-├── maestro.sqlite              # Main database
+├── maestro.sqlite
 └── recordings/
-    └── 2026-04-13/             # Session date directory
-        ├── pair-1-attempt-1.caf
-        ├── pair-1-attempt-2.caf
-        └── pair-3-attempt-1.caf
+    └── {session-date}/
 ```
 
-## 7. Extension Points (V2 Preparation)
+### 5.2 AudioService
 
-```swift
-// Protocol for future data import sources
-protocol DataImportService {
-    func importData(into db: DataService) async throws
-}
+`AudioService` is a singleton actor responsible for:
 
-// V1: Only implementation
-struct SeedDataImporter: DataImportService { ... }
+- microphone recording
+- standard playback
+- user-recording playback
+- random test playback
+- ABAB loop playback
+- audio state coordination
 
-// V2: CLI-generated data
-// struct CLIDataImporter: DataImportService { ... }
+It uses a platform client abstraction:
+
+- protocol: `AudioPlatformClient`
+- production implementation: `SystemAudioPlatformClient`
+
+This keeps the state machine testable without depending on real audio hardware during unit tests.
+
+### 5.3 HeadlessAcceptanceRunner
+
+`HeadlessAcceptanceRunner` exists in the shared core so CLI validation exercises the same data initialization path as the app.
+
+Supported commands:
+
+- `seed-check`
+- `db-summary`
+- `smoke-test`
+
+Output format is line-based and script-friendly:
+
+```text
+status=ok
+command=smoke-test
+pair_count=...
+...
 ```
+
+## 6. Audio State Model
+
+The audio runtime is modeled as explicit finite state:
+
+```text
+idle
+recording
+playing(source: .standard | .userRecording | .randomTest)
+playingABAB
+```
+
+Important behavioral constraints:
+
+- recording and playback modes must not overlap illegally
+- navigation must stop active recording or playback before switching cards
+- replaying the same user-recording source while already in that playback state is treated as idempotent, not a fatal transition
+
+The state machine is enforced in `AudioService` and covered by unit tests.
+
+## 7. Data Initialization Flow
+
+On first launch or first headless run:
+
+```text
+DataService.initialize()
+  ├─ resolve app support directory
+  ├─ create/open maestro.sqlite
+  ├─ run schema setup / migrations
+  ├─ inspect whether seed data already exists
+  └─ if needed, SeedDataImporter imports:
+       - Resources/SeedData/seed-phonemes.json
+       - Resources/SeedData/seed-sentences.json
+```
+
+Seed data is bundled with the app/package and loaded into SQLite. The app never mutates the JSON resources.
+
+## 8. Testing And Verification Shape
+
+There are three validation layers:
+
+1. Package-level build and unit tests
+   - `swift build`
+   - `swift test`
+2. Headless acceptance validation
+   - `swift run phoneticsctl --headless seed-check`
+   - `swift run phoneticsctl --headless smoke-test`
+3. Manual GUI validation
+   - `open PhoneticsMaestro.xcodeproj`
+   - run `PhoneticsMaestroApp` on `My Mac`
+
+`db-summary` is a diagnostic command, not part of the required verification chain.
+
+## 9. Current Boundaries
+
+These are deliberate current limits, not missing bugs:
+
+- no network calls
+- no V2 CLI data-generation pipeline
+- no GUI automation layer in the repository
+- headless commands validate data and initialization paths, not real microphone/TTS hardware behavior
+- `phoneticsctl --gui` still relies on environment override or local development fallback for app bundle discovery, as noted in the latest handoff
+
+## 10. Change Guidance
+
+When changing architecture-sensitive code:
+
+- keep shared business logic in `PhoneticsCore`
+- avoid duplicating logic across app host and CLI host
+- update `docs/current-state.md` if the user-visible baseline changes
+- update this file if runtime boundaries, entry points, or validation shape change
