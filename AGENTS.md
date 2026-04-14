@@ -40,15 +40,13 @@ PhoneticsMaestro/
 ## Build & Test Commands
 
 ```bash
-# Build
+# Standard verification chain
 swift build
-
-# Run tests
 swift test
-
+swift run phoneticsctl --headless seed-check
+swift run phoneticsctl --headless smoke-test
 # Open in Xcode
 open Package.swift
-
 # Format (if swift-format is installed)
 swift-format format -i -r Sources/
 ```
@@ -81,7 +79,7 @@ swift-format format -i -r Sources/
 
 ### GitHub Workflow (Required)
 - After initial repository bootstrap, all implementation work must follow this workflow:
-  1. Run local verification: `swift build` and `swift test`.
+  1. Run local verification: `swift build`, `swift test`, `swift run phoneticsctl --headless seed-check`, and `swift run phoneticsctl --headless smoke-test`.
   2. Create or switch to a task branch from `main` using the branch naming rules above.
   3. Commit only the intended logical change.
   4. Push the branch to `origin`.
