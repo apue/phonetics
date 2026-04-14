@@ -1,3 +1,4 @@
+import PhoneticsCore
 import SwiftUI
 
 @main

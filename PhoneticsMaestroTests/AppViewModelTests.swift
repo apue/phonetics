@@ -1,6 +1,6 @@
 import SwiftUI
 import XCTest
-@testable import PhoneticsMaestro
+@testable import PhoneticsCore
 
 @MainActor
 final class AppViewModelTests: XCTestCase {
