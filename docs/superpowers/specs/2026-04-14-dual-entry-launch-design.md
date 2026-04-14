@@ -35,62 +35,6 @@ This is the wrong runtime shape for the final user-facing product even though it
 - Existing `swift build` and `swift test` workflows must continue to work.
 - The migration should be incremental and PR-sliced.
 
-## Considered Approaches
-
-### Approach A: Standard App Target + Shared Core + Companion CLI
-
-Create three layers:
-
-- `PhoneticsCore`: shared module for models, services, view models, and reusable UI-supporting logic.
-- `PhoneticsMaestroApp`: standard macOS app target with bundle metadata and GUI lifecycle.
-- `phoneticsctl`: CLI target for `--gui` and `--headless` flows.
-
-Pros:
-
-- Clean separation of app lifecycle and automation lifecycle.
-- Correct final user shape: `.app`.
-- Stable foundation for future agent automation.
-- Reduces future ambiguity around bundle metadata, launch mode, and packaging.
-
-Cons:
-
-- Requires target restructuring.
-- Introduces a second runnable target.
-
-### Approach B: App Target + Separate Headless Executable Without Unified CLI
-
-Create a standard app target and a second executable, but do not provide a unified CLI surface.
-
-Pros:
-
-- Slightly smaller initial CLI design.
-
-Cons:
-
-- Worse ergonomics.
-- Agents must remember multiple launch commands.
-- Harder to evolve into a coherent automation interface.
-
-### Approach C: Single Executable With `--gui/--headless`
-
-Keep one executable target and branch behavior at runtime using flags.
-
-Pros:
-
-- Superficially simple.
-
-Cons:
-
-- Continues mixing GUI-app and headless-process concerns.
-- Does not naturally solve bundle-based app behavior.
-- Keeps the current root problem alive.
-
-## Recommendation
-
-Use Approach A.
-
-The project needs two runtime shapes, not one overloaded executable. The cleanest solution is to keep business logic shared while letting GUI and automation run through different hosts. The app target should be the only user-facing launcher. The CLI should be the automation surface.
-
 ## Proposed Architecture
 
 ### Module Layout
@@ -246,9 +190,3 @@ Headless commands may become stale if they are not used in normal development fl
 Mitigation:
 
 - Add them to the standard verification workflow for agent-driven tasks.
-
-## Open Questions
-
-- Whether `phoneticsctl --gui` should launch the built app bundle from a derived-data/build location only, or also support a future installed-app lookup path.
-
-This question does not block the first implementation slice.
