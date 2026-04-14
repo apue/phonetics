@@ -1,14 +1,33 @@
 # Phonetics Maestro
 
-A minimal, distraction-free macOS desktop app for deliberate pronunciation practice through Minimal Pair contrast training.
+Phonetics Maestro is a macOS pronunciation training app built around a perception -> production -> correction loop for English minimal pairs.
 
-## For Humans
+## Current Status
 
-**What it does:** Helps language learners (especially Chinese speakers learning English) train their ears and mouths through a perception → production → correction loop.
+The V1 app is implemented and runnable today. Current development is no longer "build Phase 1-4 from scratch"; it is now iterative bug fixing, testing, and incremental feature work on top of the shipped baseline.
 
-**Tech stack:** Swift 5.9+, SwiftUI, AVFoundation, SQLite (via GRDB), macOS 14.0+.
+For the most accurate snapshot of the current app and workflow, read [docs/current-state.md](docs/current-state.md).
 
-**Standard verification chain:**
+## Run The App
+
+Best option for humans:
+
+```bash
+open PhoneticsMaestro.xcodeproj
+```
+
+Then run the `PhoneticsMaestroApp` scheme on `My Mac`.
+
+CLI entry points:
+
+```bash
+swift run phoneticsctl --gui
+swift run phoneticsctl --headless seed-check
+swift run phoneticsctl --headless db-summary
+swift run phoneticsctl --headless smoke-test
+```
+
+## Standard Verification Chain
 
 ```bash
 swift build
@@ -17,37 +36,26 @@ swift run phoneticsctl --headless seed-check
 swift run phoneticsctl --headless smoke-test
 ```
 
-**How to open in Xcode:**
+Useful diagnostic command:
 
 ```bash
-open Package.swift  # opens in Xcode
+swift run phoneticsctl --headless db-summary
 ```
 
-## For Agents: Bootstrap Sequence
+## Project Map
 
-If you are a coding agent (Claude Code, Codex, or other), follow these steps in order:
+- [AGENTS.md](AGENTS.md): agent workflow, coding rules, directory layout
+- [docs/current-state.md](docs/current-state.md): current functionality, runtime shape, known limits
+- [ARCHITECTURE.md](ARCHITECTURE.md): current application architecture
+- [requirements.md](requirements.md): original V1 PRD and future reference scope
+- [HANDOFF.md](HANDOFF.md): handoff protocol for agent-to-agent continuity
 
-1. **Read `AGENTS.md`** — project conventions, directory layout, code style, build commands.
-2. **Read `requirements.md`** — full product requirements document with schema, seed data spec, and implementation phases.
-3. **Read `ARCHITECTURE.md`** — module diagram, state machine spec, data flow, JSON schemas.
-4. **Read `HANDOFF.md`** — how to generate and consume handoff notes between sessions.
-5. **Check `docs/handoff-*.md`** — if any exist, read the latest one and resume from there.
-6. **If no handoff notes exist:** Begin Phase 1 (Skeleton) per `requirements.md §6`.
+## For Agents
 
-### Quick Start for Fresh Project
+Start in this order:
 
-```
-Initialize a Swift Package (macOS app target) named PhoneticsMaestro.
-Set up the directory structure per AGENTS.md.
-Add GRDB.swift as SPM dependency.
-Create the SQLite schema per requirements.md §4.
-Import seed data from Resources/SeedData/.
-Build and verify the skeleton runs.
-```
-
-## Project Status
-
-- [ ] Phase 1: Skeleton
-- [ ] Phase 2: Audio Engine
-- [ ] Phase 3: Training Card
-- [ ] Phase 4: Polish
+1. Read [AGENTS.md](AGENTS.md).
+2. Read [docs/current-state.md](docs/current-state.md).
+3. Read the latest `docs/handoff-*.md` if present.
+4. Read [ARCHITECTURE.md](ARCHITECTURE.md) if the task touches runtime structure.
+5. Read [requirements.md](requirements.md) only as product intent and backlog context, not as an active "build from scratch" checklist.

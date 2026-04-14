@@ -9,32 +9,42 @@
 - **Type:** macOS native desktop app (SwiftUI)
 - **Target:** macOS 14.0+ (Sonoma)
 - **Language:** Swift 5.9+ with strict concurrency
+- **Current state snapshot:** `docs/current-state.md`
 - **Full PRD:** `requirements.md`
 - **Architecture:** `ARCHITECTURE.md`
 - **Handoff protocol:** `HANDOFF.md`
 
-## Directory Layout
+## Read This First
+
+When starting a new session, read in this order:
+
+1. `AGENTS.md`
+2. `docs/current-state.md`
+3. The latest `docs/handoff-*.md` file, if one exists and is relevant
+4. `ARCHITECTURE.md` if the task touches runtime structure, data flow, or app/CLI entry points
+5. `requirements.md` only as product intent and future-scope context, not as an active "build V1 from scratch" checklist
+
+## Repo Map
+
+Use this as a navigation aid, not as the full architecture reference. For detailed runtime structure and boundary rules, see `ARCHITECTURE.md`.
 
 ```
 PhoneticsMaestro/
-├── PhoneticsMaestro/
-│   ├── App/                    # App entry point, main window
-│   ├── Views/                  # SwiftUI views, grouped by screen
-│   │   ├── Welcome/
-│   │   ├── Training/
-│   │   ├── History/
-│   │   └── Settings/
-│   ├── ViewModels/             # @Observable view models
-│   ├── Services/               # Actor-based services
-│   │   ├── AudioService.swift  # singleton actor: TTS, record, playback, ABAB
-│   │   └── DataService.swift   # singleton actor: SQLite CRUD
-│   ├── Models/                 # Data models / DB row types
-│   ├── Utils/                  # Extensions, helpers
-│   └── Resources/
-│       └── SeedData/           # seed-phonemes.json, seed-sentences.json
-├── PhoneticsMaestroTests/
-├── Package.swift               # SPM dependencies
-└── Makefile                    # build / test / run shortcuts
+├── PhoneticsMaestro/                  # Shared PhoneticsCore code
+│   ├── Views/                         # Screen UI, including Training/
+│   ├── ViewModels/                    # Screen interaction logic
+│   ├── Services/                      # Audio, data, headless acceptance, launch helpers
+│   ├── Models/                        # Domain and UI state models
+│   └── Resources/SeedData/            # Bundled seed JSON
+├── PhoneticsMaestroApp/               # macOS app host, bundle metadata, GUI entry
+├── PhoneticsCLI/                      # phoneticsctl CLI entry
+├── PhoneticsMaestroTests/             # Unit and regression tests
+├── docs/
+│   ├── current-state.md               # Current implementation baseline
+│   └── handoff-*.md                   # Session deltas
+├── PhoneticsMaestro.xcodeproj         # Open this for GUI work
+├── Package.swift                      # Shared package and targets
+└── Makefile                           # Local shortcuts
 ```
 
 ## Build & Test Commands
@@ -45,20 +55,28 @@ swift build
 swift test
 swift run phoneticsctl --headless seed-check
 swift run phoneticsctl --headless smoke-test
+
+# Useful diagnostic
+swift run phoneticsctl --headless db-summary
+
 # Open in Xcode
-open Package.swift
+open PhoneticsMaestro.xcodeproj
+
+# GUI launch from CLI
+swift run phoneticsctl --gui
+
 # Format (if swift-format is installed)
-swift-format format -i -r Sources/
+swift-format format -i -r PhoneticsMaestro PhoneticsCLI PhoneticsMaestroApp PhoneticsMaestroTests
 ```
 
 ## Code Conventions
 
 ### Swift Style
 - Use `@Observable` macro (Observation framework). **Never** use `ObservableObject` / `@Published`.
-- Use Swift Actors for service singletons (`AudioService`, `DataService`).
+- Use Swift actors for service singletons (`AudioService`, `DataService`).
 - Use `async/await` everywhere. No completion handlers, no Combine.
-- Use `enum` for all finite states (audio state machine, navigation).
-- Prefer value types (`struct`) over classes unless Actor or reference semantics required.
+- Use `enum` for all finite states (audio state machine, navigation, CLI headless commands).
+- Prefer value types (`struct`) over classes unless actor or reference semantics are required.
 - One type per file. File name = type name.
 - Max function body: 40 lines. Extract private helpers if longer.
 
@@ -66,51 +84,64 @@ swift-format format -i -r Sources/
 - Views: `TrainingCardView`, `WelcomeView`
 - ViewModels: `TrainingCardViewModel`, `HistoryViewModel`
 - Services: `AudioService`, `DataService`
-- Models: `Word`, `PhonePair`, `Sentence`, `UserProgress`
+- Models: `PhonePair`, `Sentence`, `SessionStats`, `AppSettings`
 
 ### Error Handling
 - Services throw typed errors: `AudioServiceError`, `DataServiceError`.
-- ViewModels catch and expose errors via `@Observable` published error state.
+- ViewModels catch and expose errors via `@Observable` error state.
 - Views show errors via `.alert()`.
+- Headless commands return stable `status=` / `command=` output for scripting and CI.
 
 ### Git
 - One commit per logical change. Descriptive message in imperative mood.
-- Branch naming: `feat/phase-N-description`, `fix/description`.
+- Branch naming: `feat/phase-N-description`, `fix/description`, `docs/description`.
 
 ### GitHub Workflow (Required)
-- After initial repository bootstrap, all implementation work must follow this workflow:
+- After repository bootstrap, all implementation work follows this workflow:
   1. Run local verification: `swift build`, `swift test`, `swift run phoneticsctl --headless seed-check`, and `swift run phoneticsctl --headless smoke-test`.
-  2. Create or switch to a task branch from `main` using the branch naming rules above.
+  2. Create or switch to a task branch from `main`.
   3. Commit only the intended logical change.
   4. Push the branch to `origin`.
   5. Open a pull request.
   6. Wait for automated checks to complete and inspect failures with `gh` CLI if needed.
   7. Perform code review before merge, prioritizing bugs, regressions, edge cases, and missing tests.
   8. Address review comments on the same branch, re-run local verification, and push updates.
-  9. Merge only after local checks pass, remote checks pass, review comments are addressed.
+  9. Merge after local checks pass, remote checks pass, and review comments are addressed.
 - Prefer `gh` CLI for repository, PR, review, and Actions interactions.
-- Do not merge directly to `main` without an explicit user request.
+- Do not bypass the PR workflow by committing directly to `main`.
 - When a task ends without merge, leave the branch pushed and the PR updated with the latest verified state.
+
+## Documentation Layering
+
+- `docs/current-state.md` is the baseline description of what the repository currently does.
+- `requirements.md` is the product-intent document, not the source of truth for current implementation status.
+- `ARCHITECTURE.md` describes the current runtime structure and system boundaries.
+- `docs/handoff-*.md` files are deltas for session continuation, not the primary project overview.
 
 ## Architecture Rules
 
 1. **Views never call Services directly.** Views → ViewModel → Service.
-2. **AudioService is a singleton actor** with an explicit state machine. All state transitions go through a single `transition(to:)` method.
+2. **AudioService is a singleton actor** with an explicit state machine. State changes must remain coherent and testable.
 3. **DataService is a singleton actor** wrapping SQLite. Exposed via async methods returning model types.
-4. **No network calls in V1.** If you find yourself importing URLSession, stop.
+4. **No network calls in V1.** If you find yourself importing `URLSession`, stop.
 5. **Seed data flows one way:** Bundle JSON → `SeedDataImporter` → SQLite. The app never writes back to JSON.
+6. **GUI and CLI share the same core code.** Do not fork business logic between `PhoneticsMaestroApp` and `phoneticsctl`.
 
-## Implementation Priority
+## Current Development Mode
 
-Follow the phases in `requirements.md §6` strictly:
-1. **Phase 1** (Skeleton) must be fully complete and testable before starting Phase 2.
-2. Within each phase, implement items top-to-bottom as listed.
-3. After completing each phase, generate a handoff note per `HANDOFF.md` protocol.
+- Phase 1-4 implementation work is complete.
+- The project is now in iterative maintenance and extension mode:
+  - bug fixing
+  - manual testing follow-up
+  - incremental features
+  - documentation and workflow refinement
+- Use `requirements.md §6` as historical scope and future reference, not as an instruction to rebuild completed phases.
 
 ## What NOT To Do
 
 - Do NOT implement the CLI data pipeline (V2 feature).
 - Do NOT add network/API calls.
-- Do NOT use third-party UI frameworks (no AppKit bridging unless absolutely necessary for audio).
-- Do NOT use `@StateObject`, `@ObservedObject`, `@EnvironmentObject` — use `@Observable` + `@State` / `@Environment`.
+- Do NOT use third-party UI frameworks unless there is a clear, justified blocker.
+- Do NOT use `@StateObject`, `@ObservedObject`, or `@EnvironmentObject`; use `@Observable` with `@State` / `@Environment`.
 - Do NOT store recordings in the app bundle. Use `~/Library/Application Support/PhoneticsMaestro/recordings/`.
+- Do NOT treat old handoff notes or outdated phase checklists as a more authoritative source than `AGENTS.md` and `docs/current-state.md`.

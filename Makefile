@@ -17,4 +17,4 @@ run-gui:
 	swift run phoneticsctl --gui
 
 open:
-	open Package.swift
+	open PhoneticsMaestro.xcodeproj

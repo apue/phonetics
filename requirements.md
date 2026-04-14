@@ -1,5 +1,7 @@
 # 产品需求文档 (PRD): Phonetics Maestro V1.0
 
+> 说明：本文件是产品目标与范围文档，不是当前实现状态的权威来源。当前仓库已实现的功能、运行入口和验证方式请优先查看 `docs/current-state.md`。
+
 - **文档状态:** Draft → Review-Ready
 - **目标平台:** macOS 14.0+ (Sonoma) Native
 - **核心定位:** 专注于"听辨-输出-矫正"闭环的本地化外语发音刻意练习工具。
