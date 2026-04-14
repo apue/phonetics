@@ -66,6 +66,8 @@ public struct HeadlessAcceptanceRunner: Sendable {
         let pairCount = try await countPairs(using: service)
         let sentenceCount = try await countSentences(using: service)
         let databaseURL = await service.currentDatabaseURL()
+        let histories = try await service.fetchHistorySessionSummaries()
+        let settings = try await service.fetchSettings()
 
         guard pairCount > 0, sentenceCount > 0 else {
             throw HeadlessAcceptanceRunnerError.missingSeedData
@@ -76,7 +78,13 @@ public struct HeadlessAcceptanceRunner: Sendable {
             command: HeadlessAcceptanceCommand.dbSummary.rawValue,
             fields: [
                 "database_path": databaseURL.path,
+                "history_summaries": String(histories.count),
                 "pair_count": String(pairCount),
+                "settings": [
+                    settings.preferredVoiceName,
+                    settings.preferredMicrophoneName,
+                    String(settings.ababIntervalMilliseconds)
+                ].joined(separator: "|"),
                 "sentence_count": String(sentenceCount)
             ]
         )
@@ -133,9 +141,53 @@ public struct HeadlessAcceptanceRunner: Sendable {
             status: "fail",
             command: command.rawValue,
             fields: [
-                "error": String(describing: error)
+                "error_code": errorCode(for: error),
+                "error_message": errorMessage(for: error)
             ]
         )
+    }
+
+    private func errorCode(for error: Error) -> String {
+        switch error {
+        case let dataServiceError as DataServiceError:
+            switch dataServiceError {
+            case .databaseUnavailable:
+                return "database_unavailable"
+            case .database:
+                return "database_error"
+            case .fileSystem:
+                return "filesystem_error"
+            case .invalidSeedData:
+                return "invalid_seed_data"
+            case .missingResource:
+                return "missing_resource"
+            }
+        case let runnerError as HeadlessAcceptanceRunnerError:
+            switch runnerError {
+            case .missingSeedData:
+                return "missing_seed_data"
+            case .missingTrainingPair:
+                return "missing_training_pair"
+            }
+        default:
+            return "unknown_error"
+        }
+    }
+
+    private func errorMessage(for error: Error) -> String {
+        switch error {
+        case let dataServiceError as DataServiceError:
+            return dataServiceError.errorDescription ?? String(describing: dataServiceError)
+        case let runnerError as HeadlessAcceptanceRunnerError:
+            switch runnerError {
+            case .missingSeedData:
+                return "Seed counts are not available."
+            case .missingTrainingPair:
+                return "A training pair could not be loaded."
+            }
+        default:
+            return String(describing: error)
+        }
     }
 }
 

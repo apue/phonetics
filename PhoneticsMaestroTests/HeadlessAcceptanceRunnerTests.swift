@@ -1,3 +1,4 @@
+import Foundation
 import XCTest
 @testable import PhoneticsCore
 
@@ -28,6 +29,8 @@ final class HeadlessAcceptanceRunnerTests: XCTestCase {
         XCTAssertTrue(result.output.contains(appSupportURL.appending(path: "maestro.sqlite").path))
         XCTAssertGreaterThan(try value(for: "pair_count", in: result.output), 0)
         XCTAssertGreaterThan(try value(for: "sentence_count", in: result.output), 0)
+        XCTAssertEqual(try value(for: "history_summaries", in: result.output), 0)
+        XCTAssertTrue(result.output.contains("settings=System Default|System Default|300"))
     }
 
     func testSmokeTestExercisesCoreQueries() async throws {
@@ -44,6 +47,21 @@ final class HeadlessAcceptanceRunnerTests: XCTestCase {
         XCTAssertTrue(result.output.contains("training_pair="))
         XCTAssertTrue(result.output.contains("history_summaries="))
         XCTAssertTrue(result.output.contains("settings="))
+    }
+
+    func testFailureOutputUsesStableErrorFields() async throws {
+        let fileURL = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .notDirectory)
+        defer { try? FileManager.default.removeItem(at: fileURL) }
+        FileManager.default.createFile(atPath: fileURL.path, contents: Data("blocked".utf8))
+
+        let runner = HeadlessAcceptanceRunner(appSupportURL: fileURL)
+        let result = await runner.run(.seedCheck)
+
+        XCTAssertEqual(result.exitCode, 1)
+        XCTAssertTrue(result.output.contains("status=fail"))
+        XCTAssertTrue(result.output.contains("error_code="))
+        XCTAssertTrue(result.output.contains("error_message="))
     }
 
     private func value(for key: String, in output: String) throws -> Int {
