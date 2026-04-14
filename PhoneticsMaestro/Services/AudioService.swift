@@ -124,6 +124,10 @@ actor AudioService {
     }
 
     func playUserRecording(rate: Float = 1.0) async throws {
+        if case .playing(source: .userRecording) = state {
+            return
+        }
+
         try ensureIdle(for: "playUserRecording")
         let recordingURL = try await requireRecordingURL()
         transition(to: .playing(source: .userRecording))

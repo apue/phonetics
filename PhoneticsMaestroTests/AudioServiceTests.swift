@@ -118,6 +118,46 @@ final class AudioServiceTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(stopPlaybackCallCount, 1)
     }
 
+    func testPlayUserRecordingWhileAlreadyPlayingDoesNotThrowIllegalTransition() async throws {
+        let platform = MockAudioPlatformClient(playbackMode: .controlled)
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = AudioService(
+            platformClient: platform,
+            fileManager: .default,
+            appSupportURL: appSupportURL
+        )
+
+        _ = try await service.startRecording(
+            itemType: "pair",
+            itemID: 5,
+            attempt: 1,
+            sessionDate: "2026-04-14"
+        )
+        _ = try await service.stopRecording()
+
+        let firstPlaybackTask = Task {
+            try await service.playUserRecording()
+        }
+
+        await platform.waitUntilPlaybackStarts()
+
+        do {
+            try await service.playUserRecording()
+        } catch {
+            XCTFail("Expected re-entrant playUserRecording call to be ignored, got \(error)")
+        }
+
+        await platform.completePlayback()
+        try await firstPlaybackTask.value
+
+        let audioFilePlaybackCount = await platform.audioFilePlaybackCount()
+        let finalState = await service.currentState()
+        XCTAssertEqual(audioFilePlaybackCount, 1)
+        XCTAssertEqual(finalState, .idle)
+    }
+
     private func makeTemporaryDirectory() -> URL {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
@@ -138,6 +178,7 @@ actor MockAudioPlatformClient: AudioPlatformClient {
     private var fileURLs = Set<String>()
     private var speechTexts: [String] = []
     private var stopPlaybackCount = 0
+    private var audioFilePlaybackCountValue = 0
     private var playbackContinuation: CheckedContinuation<Void, Error>?
     private var playbackStartedContinuation: CheckedContinuation<Void, Never>?
 
@@ -167,6 +208,7 @@ actor MockAudioPlatformClient: AudioPlatformClient {
     }
 
     func playAudioFile(at url: URL, rate _: Float) async throws {
+        audioFilePlaybackCountValue += 1
         fileURLs.insert(url.path)
         playbackStartedContinuation?.resume()
         playbackStartedContinuation = nil
@@ -193,6 +235,10 @@ actor MockAudioPlatformClient: AudioPlatformClient {
 
     func stopPlaybackCallCount() -> Int {
         stopPlaybackCount
+    }
+
+    func audioFilePlaybackCount() -> Int {
+        audioFilePlaybackCountValue
     }
 
     func waitUntilPlaybackStarts() async {
