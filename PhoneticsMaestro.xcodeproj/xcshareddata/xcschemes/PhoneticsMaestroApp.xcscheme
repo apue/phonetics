@@ -20,6 +20,20 @@
                ReferencedContainer = "container:PhoneticsMaestro.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D988125DF3C05D0929A6DC9B"
+               BuildableName = "PhoneticsMaestroTests.xctest"
+               BlueprintName = "PhoneticsMaestroTests"
+               ReferencedContainer = "container:PhoneticsMaestro.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -37,6 +51,16 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D988125DF3C05D0929A6DC9B"
+               BuildableName = "PhoneticsMaestroTests.xctest"
+               BlueprintName = "PhoneticsMaestroTests"
+               ReferencedContainer = "container:PhoneticsMaestro.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
