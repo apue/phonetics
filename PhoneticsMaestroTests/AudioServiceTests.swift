@@ -1,5 +1,5 @@
 import XCTest
-@testable import PhoneticsMaestro
+@testable import PhoneticsCore
 
 final class AudioServiceTests: XCTestCase {
     func testStartRecordingTransitionsToRecordingAndBuildsExpectedPath() async throws {

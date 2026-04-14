@@ -3,7 +3,7 @@ import SwiftUI
 
 @MainActor
 @Observable
-final class AppViewModel {
+public final class AppViewModel {
     var selectedScreen: AppScreen = .welcome
     var splitViewVisibility: NavigationSplitViewVisibility = .all
     var isInitializing = false
@@ -16,11 +16,15 @@ final class AppViewModel {
 
     let trainingCardViewModel: TrainingCardViewModel
 
-    init(trainingCardViewModel: TrainingCardViewModel = TrainingCardViewModel()) {
+    public init() {
+        trainingCardViewModel = TrainingCardViewModel()
+    }
+
+    init(trainingCardViewModel: TrainingCardViewModel) {
         self.trainingCardViewModel = trainingCardViewModel
     }
 
-    func initialize() async {
+    public func initialize() async {
         guard !isInitializing, !isInitialized else {
             return
         }

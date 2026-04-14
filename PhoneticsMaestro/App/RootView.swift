@@ -1,9 +1,13 @@
 import SwiftUI
 
-struct RootView: View {
+public struct RootView: View {
     @Bindable var viewModel: AppViewModel
 
-    var body: some View {
+    public init(viewModel: AppViewModel) {
+        self.viewModel = viewModel
+    }
+
+    public var body: some View {
         NavigationSplitView(columnVisibility: $viewModel.splitViewVisibility) {
             List(AppScreen.allCases, selection: $viewModel.selectedScreen) { screen in
                 Label(screen.title, systemImage: screen.systemImage)

@@ -1,5 +1,5 @@
 import XCTest
-@testable import PhoneticsMaestro
+@testable import PhoneticsCore
 
 @MainActor
 final class SettingsViewModelTests: XCTestCase {
