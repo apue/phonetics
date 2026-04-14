@@ -8,11 +8,18 @@ A minimal, distraction-free macOS desktop app for deliberate pronunciation pract
 
 **Tech stack:** Swift 5.9+, SwiftUI, AVFoundation, SQLite (via GRDB), macOS 14.0+.
 
-**How to build:**
+**Standard verification chain:**
 
 ```bash
 swift build
 swift test
+swift run phoneticsctl --headless seed-check
+swift run phoneticsctl --headless smoke-test
+```
+
+**How to open in Xcode:**
+
+```bash
 open Package.swift  # opens in Xcode
 ```
 
