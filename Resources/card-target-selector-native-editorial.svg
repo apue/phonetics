@@ -1,0 +1,212 @@
+<svg width="1440" height="960" viewBox="0 0 1440 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="960" fill="#EEF1F5"/>
+
+  <rect x="80" y="58" width="1280" height="844" rx="30" fill="#FCFCFE" stroke="#D9DEE7"/>
+  <rect x="80" y="58" width="1280" height="58" rx="30" fill="#F3F5F8"/>
+  <rect x="80" y="86" width="1280" height="30" fill="#F3F5F8"/>
+
+  <circle cx="116" cy="87" r="7" fill="#FF5F57"/>
+  <circle cx="140" cy="87" r="7" fill="#FEBC2E"/>
+  <circle cx="164" cy="87" r="7" fill="#28C840"/>
+
+  <text x="720" y="95" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="17" font-weight="600" fill="#2C3138">
+    Phonetics Maestro
+  </text>
+
+  <rect x="106" y="140" width="212" height="732" rx="24" fill="#F7F8FB" stroke="#E4E8EF"/>
+  <text x="140" y="184" font-family="SF Pro Display, Inter, Arial" font-size="14" font-weight="700" fill="#7A828F">NAVIGATION</text>
+
+  <rect x="128" y="206" width="168" height="50" rx="15" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="212" y="237" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="16" font-weight="500" fill="#57606B">Begin</text>
+
+  <rect x="128" y="268" width="168" height="50" rx="15" fill="#E8EEFF"/>
+  <text x="212" y="299" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="16" font-weight="600" fill="#2E5EEA">Training</text>
+
+  <rect x="128" y="330" width="168" height="50" rx="15" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="212" y="361" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="16" font-weight="500" fill="#57606B">History</text>
+
+  <rect x="128" y="392" width="168" height="50" rx="15" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="212" y="423" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="16" font-weight="500" fill="#57606B">Settings</text>
+
+  <rect x="128" y="490" width="168" height="136" rx="20" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="150" y="524" font-family="SF Pro Display, Inter, Arial" font-size="13" font-weight="700" fill="#8A93A0">CURRENT TARGET</text>
+  <text x="150" y="558" font-family="SF Pro Display, Inter, Arial" font-size="28" font-weight="800" fill="#191F27">ʌ-æ</text>
+  <text x="150" y="584" font-family="SF Pro Display, Inter, Arial" font-size="14" font-weight="500" fill="#636D79">but / bat</text>
+  <text x="150" y="610" font-family="SF Pro Display, Inter, Arial" font-size="13" font-weight="500" fill="#8A93A0">Sound Contrast</text>
+
+  <rect x="128" y="646" width="168" height="156" rx="20" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="150" y="684" font-family="SF Pro Display, Inter, Arial" font-size="13" font-weight="700" fill="#8A93A0">SESSION</text>
+  <text x="150" y="716" font-family="SF Pro Display, Inter, Arial" font-size="28" font-weight="800" fill="#191F27">12 / 9</text>
+  <text x="150" y="742" font-family="SF Pro Display, Inter, Arial" font-size="14" font-weight="500" fill="#636D79">Listens / Correct</text>
+  <text x="150" y="780" font-family="SF Pro Display, Inter, Arial" font-size="24" font-weight="700" fill="#191F27">02:34</text>
+  <text x="150" y="804" font-family="SF Pro Display, Inter, Arial" font-size="14" font-weight="500" fill="#636D79">Elapsed</text>
+
+  <text x="356" y="188" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="700" fill="#7A828F">TRAINING CARD</text>
+  <text x="356" y="236" font-family="SF Pro Display, Inter, Arial" font-size="38" font-weight="800" fill="#191F27">
+    Word Contrast
+  </text>
+  <text x="356" y="270" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="400" fill="#697280">
+    Train the contrast between /ʌ/ and /æ/ by listening first, then comparing your own recording.
+  </text>
+  <text x="356" y="298" font-family="SF Pro Display, Inter, Arial" font-size="16" font-weight="500" fill="#7A828F">
+    Contrast /ʌ/ vs /æ/  •  Tier 1
+  </text>
+
+  <rect x="902" y="182" width="158" height="38" rx="12" fill="#EAF0FF" stroke="#C9D7FF"/>
+  <text x="981" y="207" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="14" font-weight="700" fill="#2E5EEA">Target: ʌ-æ ▾</text>
+
+  <rect x="1080" y="182" width="76" height="38" rx="12" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="1118" y="207" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="14" font-weight="600" fill="#4D5662">★ Save</text>
+
+  <rect x="1168" y="182" width="84" height="38" rx="12" fill="#FFF6EA" stroke="#F0D9B6"/>
+  <text x="1210" y="207" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="14" font-weight="600" fill="#AA6A14">! Hard</text>
+
+  <rect x="356" y="334" width="398" height="140" rx="26" fill="#EAF0FF" stroke="#C9D7FF"/>
+  <text x="390" y="372" font-family="SF Pro Display, Inter, Arial" font-size="13" font-weight="700" fill="#5371C8">SELECTED TARGET</text>
+  <text x="390" y="426" font-family="SF Pro Display, Inter, Arial" font-size="46" font-weight="800" fill="#191F27">but</text>
+  <text x="390" y="457" font-family="SF Pro Display, Inter, Arial" font-size="20" font-weight="500" fill="#5F6976">/bʌt/   •   A</text>
+  <circle cx="712" cy="404" r="24" fill="#2E5EEA"/>
+  <polygon points="704,392 704,416 724,404" fill="#FFFFFF"/>
+
+  <rect x="776" y="334" width="398" height="140" rx="26" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="810" y="372" font-family="SF Pro Display, Inter, Arial" font-size="13" font-weight="700" fill="#8A93A0">RIGHT TARGET</text>
+  <text x="810" y="426" font-family="SF Pro Display, Inter, Arial" font-size="46" font-weight="800" fill="#191F27">bat</text>
+  <text x="810" y="457" font-family="SF Pro Display, Inter, Arial" font-size="20" font-weight="500" fill="#5F6976">/bæt/   •   B</text>
+
+  <rect x="356" y="500" width="400" height="252" rx="26" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="388" y="542" font-family="SF Pro Display, Inter, Arial" font-size="24" font-weight="700" fill="#191F27">Perception</text>
+  <text x="388" y="570" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="400" fill="#697280">
+    Run a blind test, then decide whether you heard A or B.
+  </text>
+
+  <rect x="388" y="598" width="336" height="56" rx="18" fill="#2E5EEA"/>
+  <text x="556" y="634" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="20" font-weight="700" fill="#FFFFFF">
+    ▶ Random Test
+  </text>
+
+  <rect x="388" y="672" width="156" height="50" rx="16" fill="#EEF3FF" stroke="#C9D7FF"/>
+  <text x="466" y="704" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="20" font-weight="600" fill="#2E5EEA">but</text>
+
+  <rect x="568" y="672" width="156" height="50" rx="16" fill="#FFF1F1" stroke="#FFD3D3"/>
+  <text x="646" y="704" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="20" font-weight="600" fill="#C24B4B">bat</text>
+
+  <rect x="388" y="734" width="336" height="38" rx="12" fill="#F5F7FB"/>
+  <text x="556" y="758" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="500" fill="#5E6773">
+    Listening complete. Choose the target you heard.
+  </text>
+
+  <rect x="776" y="500" width="476" height="252" rx="26" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="808" y="542" font-family="SF Pro Display, Inter, Arial" font-size="24" font-weight="700" fill="#191F27">Practice</text>
+  <text x="808" y="570" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="400" fill="#697280">
+    Selected target: A • but
+  </text>
+
+  <rect x="808" y="596" width="188" height="56" rx="18" fill="#151922"/>
+  <text x="902" y="632" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="20" font-weight="700" fill="#FFFFFF">
+    ● Record
+  </text>
+
+  <rect x="1012" y="596" width="100" height="56" rx="18" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="1062" y="632" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="600" fill="#4D5662">
+    Standard
+  </text>
+
+  <rect x="1124" y="596" width="60" height="56" rx="18" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="1154" y="632" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="600" fill="#4D5662">
+    Me
+  </text>
+
+  <rect x="1196" y="596" width="56" height="56" rx="18" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="1224" y="632" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="600" fill="#4D5662">
+    A/B
+  </text>
+
+  <rect x="808" y="670" width="120" height="46" rx="15" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="868" y="699" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="17" font-weight="600" fill="#4D5662">
+    Stop
+  </text>
+
+  <text x="808" y="744" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="500" fill="#7A828F">
+    Use Standard, Me, and A/B to compare your latest attempt with the selected target.
+  </text>
+
+  <rect x="356" y="778" width="682" height="84" rx="24" fill="#F7F8FB" stroke="#E1E6EE"/>
+  <text x="390" y="812" font-family="SF Pro Display, Inter, Arial" font-size="13" font-weight="700" fill="#8A93A0">LISTENS</text>
+  <text x="390" y="842" font-family="SF Pro Display, Inter, Arial" font-size="28" font-weight="800" fill="#191F27">12</text>
+
+  <text x="544" y="812" font-family="SF Pro Display, Inter, Arial" font-size="13" font-weight="700" fill="#8A93A0">CORRECT</text>
+  <text x="544" y="842" font-family="SF Pro Display, Inter, Arial" font-size="28" font-weight="800" fill="#191F27">9</text>
+
+  <text x="716" y="812" font-family="SF Pro Display, Inter, Arial" font-size="13" font-weight="700" fill="#8A93A0">PRACTICES</text>
+  <text x="716" y="842" font-family="SF Pro Display, Inter, Arial" font-size="28" font-weight="800" fill="#191F27">4</text>
+
+  <text x="896" y="812" font-family="SF Pro Display, Inter, Arial" font-size="13" font-weight="700" fill="#8A93A0">TIME</text>
+  <text x="896" y="842" font-family="SF Pro Display, Inter, Arial" font-size="28" font-weight="800" fill="#191F27">02:34</text>
+
+  <rect x="1060" y="786" width="92" height="56" rx="18" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="1106" y="821" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="600" fill="#4D5662">
+    ← Prev
+  </text>
+
+  <rect x="1164" y="786" width="88" height="56" rx="18" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="1208" y="821" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="600" fill="#4D5662">
+    Reload
+  </text>
+
+  <rect x="1264" y="786" width="70" height="56" rx="18" fill="#2E5EEA"/>
+  <text x="1299" y="821" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="700" fill="#FFFFFF">
+    Next
+  </text>
+
+  <rect x="0" y="0" width="1440" height="960" fill="#141922" fill-opacity="0.06"/>
+
+  <rect x="930" y="126" width="368" height="590" rx="28" fill="#FFFFFF" stroke="#DCE3ED"/>
+  <rect x="930" y="126" width="368" height="94" rx="28" fill="#FFFFFF"/>
+  <text x="958" y="157" font-family="SF Pro Display, Inter, Arial" font-size="12" font-weight="700" fill="#8A93A0">CHOOSE TARGET</text>
+  <text x="958" y="190" font-family="SF Pro Display, Inter, Arial" font-size="26" font-weight="800" fill="#191F27">Switch What You&apos;re Training</text>
+  <text x="958" y="214" font-family="SF Pro Display, Inter, Arial" font-size="14" font-weight="400" fill="#697280">
+    Grouped by type, but every row is still a concrete target.
+  </text>
+
+  <rect x="956" y="234" width="316" height="42" rx="14" fill="#F7F8FB" stroke="#E6EBF2"/>
+  <text x="980" y="261" font-family="SF Pro Display, Inter, Arial" font-size="14" font-weight="500" fill="#9099A7">Search targets…</text>
+
+  <text x="958" y="306" font-family="SF Pro Display, Inter, Arial" font-size="12" font-weight="700" fill="#8A93A0">SOUND CONTRASTS</text>
+
+  <rect x="956" y="322" width="316" height="66" rx="18" fill="#E8EEFF" stroke="#C9D7FF"/>
+  <text x="978" y="350" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="800" fill="#1F2A3A">ʌ-æ</text>
+  <text x="978" y="374" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="500" fill="#536072">but / bat</text>
+  <text x="1196" y="350" font-family="SF Pro Display, Inter, Arial" font-size="14" font-weight="700" fill="#2E5EEA">Current</text>
+
+  <rect x="956" y="398" width="316" height="58" rx="18" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="978" y="425" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="800" fill="#1F2A3A">ɪ-iː</text>
+  <text x="978" y="447" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="500" fill="#536072">bit / beat</text>
+
+  <rect x="956" y="466" width="316" height="58" rx="18" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="978" y="493" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="800" fill="#1F2A3A">l-r</text>
+  <text x="978" y="515" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="500" fill="#536072">light / right</text>
+
+  <rect x="956" y="534" width="316" height="58" rx="18" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="978" y="561" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="800" fill="#1F2A3A">θ-s</text>
+  <text x="978" y="583" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="500" fill="#536072">think / sink</text>
+
+  <text x="958" y="626" font-family="SF Pro Display, Inter, Arial" font-size="12" font-weight="700" fill="#8A93A0">LINKING / REDUCTION</text>
+
+  <rect x="956" y="642" width="316" height="58" rx="18" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="978" y="669" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="800" fill="#1F2A3A">Linking</text>
+  <text x="978" y="691" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="500" fill="#536072">Pick it up.</text>
+
+  <rect x="956" y="710" width="316" height="58" rx="18" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="978" y="737" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="800" fill="#1F2A3A">Reduction</text>
+  <text x="978" y="759" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="500" fill="#536072">I need a cup of tea.</text>
+
+  <text x="958" y="803" font-family="SF Pro Display, Inter, Arial" font-size="12" font-weight="700" fill="#8A93A0">STRESS / INTONATION</text>
+
+  <rect x="956" y="819" width="150" height="58" rx="18" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="978" y="846" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="800" fill="#1F2A3A">Stress</text>
+  <text x="978" y="868" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="500" fill="#536072">record</text>
+
+  <rect x="1122" y="819" width="150" height="58" rx="18" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="1144" y="846" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="800" fill="#1F2A3A">Intonation</text>
+  <text x="1144" y="868" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="500" fill="#536072">You finished?</text>
+</svg>
