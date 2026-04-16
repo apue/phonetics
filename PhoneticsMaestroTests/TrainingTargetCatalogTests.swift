@@ -70,4 +70,14 @@ final class TrainingTargetCatalogTests: XCTestCase {
         XCTAssertEqual(sections[0].targets.map(\.id), ["pair:ʌ-æ", "pair:iː-ɪ"])
         XCTAssertEqual(sections[1].targets.map(\.id), ["sentence:linking"])
     }
+
+    func testSelectorButtonConfigurationKeepsStableWidthAcrossTitles() {
+        let short = TrainingTargetSelectorButtonConfiguration(currentTargetTitle: "Linking")
+        let long = TrainingTargetSelectorButtonConfiguration(currentTargetTitle: "Sentence Intonation")
+
+        XCTAssertEqual(short.titleText, "Target: Linking")
+        XCTAssertEqual(long.titleText, "Target: Sentence Intonation")
+        XCTAssertEqual(short.minimumWidth, long.minimumWidth)
+        XCTAssertEqual(short.accessorySymbolName, "chevron.down")
+    }
 }

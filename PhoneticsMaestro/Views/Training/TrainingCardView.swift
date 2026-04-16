@@ -121,8 +121,23 @@ struct TrainingCardView: View {
     }
 
     private var targetSelectorMenu: some View {
-        Button("Target: \(viewModel.currentTarget?.title ?? "Select")") {
+        let configuration = TrainingTargetSelectorButtonConfiguration(
+            currentTargetTitle: viewModel.currentTarget?.title
+        )
+
+        return Button {
             isTargetSelectorPresented = true
+        } label: {
+            HStack(spacing: 10) {
+                Text(configuration.titleText)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Image(systemName: configuration.accessorySymbolName)
+                    .font(.caption.weight(.semibold))
+            }
+            .frame(minWidth: configuration.minimumWidth, alignment: .leading)
         }
         .buttonStyle(.borderedProminent)
         .popover(isPresented: $isTargetSelectorPresented, arrowEdge: .bottom) {
