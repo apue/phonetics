@@ -7,6 +7,9 @@ struct TrainingCardView: View {
     @State private var isTargetSelectorPresented = false
     @State private var feedbackResetTask: Task<Void, Never>?
 
+    private let targetSelectorWidth: CGFloat = 340
+    private let targetSelectorListHeight: CGFloat = 260
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             headerSection
@@ -118,36 +121,74 @@ struct TrainingCardView: View {
     }
 
     private var targetSelectorMenu: some View {
-        Button("Target: \(viewModel.currentTarget?.title ?? "Select")") {
+        let configuration = TrainingTargetSelectorButtonConfiguration(
+            currentTargetTitle: viewModel.currentTarget?.title
+        )
+
+        return Button {
             isTargetSelectorPresented = true
+        } label: {
+            HStack(spacing: 10) {
+                Text(configuration.titleText)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Image(systemName: configuration.accessorySymbolName)
+                    .font(.caption.weight(.semibold))
+            }
+            .frame(width: configuration.fixedWidth, alignment: .leading)
         }
         .buttonStyle(.borderedProminent)
+        .frame(width: configuration.fixedWidth, alignment: .trailing)
         .popover(isPresented: $isTargetSelectorPresented, arrowEdge: .bottom) {
-            VStack(alignment: .leading, spacing: 16) {
+            targetSelectorPopover
+        }
+    }
+
+    private var targetSelectorPopover: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text("Switch What You're Training")
                     .font(.headline)
 
-                Text("Grouped by type, but every row is still a concrete target.")
+                Text("Choose a target below. The list scrolls when there are more targets than fit.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 18)
+            .padding(.bottom, 14)
 
-                ForEach(TrainingTargetGroup.allCases) { group in
-                    let groupTargets = viewModel.targets.filter { $0.group == group }
-                    if !groupTargets.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(group.sectionTitle)
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(.secondary)
+            Divider()
 
-                            ForEach(groupTargets) { target in
-                                targetSelectorRow(target)
-                            }
-                        }
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 14) {
+                    ForEach(TrainingTargetSelectorSection.sections(from: viewModel.targets)) { section in
+                        targetSelectorSection(section)
                     }
                 }
+                .padding(14)
             }
-            .padding(20)
-            .frame(width: 360)
+            .scrollIndicators(.visible)
+            .frame(maxHeight: targetSelectorListHeight)
+        }
+        .frame(width: targetSelectorWidth)
+        .padding(.bottom, 8)
+    }
+
+    private func targetSelectorSection(_ section: TrainingTargetSelectorSection) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(section.group.sectionTitle.uppercased())
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+
+            VStack(spacing: 6) {
+                ForEach(section.targets) { target in
+                    targetSelectorRow(target)
+                }
+            }
         }
     }
 
@@ -433,23 +474,24 @@ struct TrainingCardView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(target.title)
-                        .font(.body.weight(.semibold))
+                        .font(.callout.weight(.semibold))
                     Text(target.subtitle)
-                        .font(.footnote)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
                 if isCurrent {
-                    Text("Current")
+                    Image(systemName: "checkmark")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(Color.accentColor)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isCurrent ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06))
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(isCurrent ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.05))
             )
         }
         .buttonStyle(.plain)
