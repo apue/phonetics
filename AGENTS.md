@@ -99,13 +99,14 @@ swift-format format -i -r PhoneticsMaestro PhoneticsCLI PhoneticsMaestroApp Phon
 ### GitHub Workflow (Required)
 - After repository bootstrap, all implementation work follows this workflow:
   1. Run local verification: `swift build`, `swift test`, `swift run phoneticsctl --headless seed-check`, and `swift run phoneticsctl --headless smoke-test`.
+     Exception: for pure text-only changes that do not modify executable code, tests, build configuration, scripts, or CI workflow files, agents may skip proactively running the verification chain. When using this exception, state explicitly in the final summary that verification was intentionally skipped because the change was documentation-only.
   2. Create or switch to a task branch from `main`.
   3. Commit only the intended logical change.
   4. Push the branch to `origin`.
   5. Open a pull request.
   6. Wait for automated checks to complete and inspect failures with `gh` CLI if needed.
   7. Perform code review before merge, prioritizing bugs, regressions, edge cases, and missing tests.
-  8. Address review comments on the same branch, re-run local verification, and push updates.
+  8. Address review comments on the same branch, re-run local verification, and push updates. Based on the recent review in handoff.md, please implement the fix for the dropped tags in note_bundle.py. After verifying with pytest, commit the changes and push to github using the gh workflow skill.
   9. Merge after local checks pass, remote checks pass, and review comments are addressed.
 - Prefer `gh` CLI for repository, PR, review, and Actions interactions.
 - Do not bypass the PR workflow by committing directly to `main`.
