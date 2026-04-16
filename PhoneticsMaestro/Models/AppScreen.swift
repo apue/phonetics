@@ -8,7 +8,7 @@ enum AppScreen: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .training:
-            return "Training"
+            return "Begin"
         case .history:
             return "History"
         case .settings:

@@ -43,6 +43,8 @@ public struct HeadlessAcceptanceRunner: Sendable {
             return try await smokeTestOutput(using: service)
         case .uiScreenshots:
             return try await uiScreenshotOutput()
+        case .uiReadout:
+            return try await uiReadoutOutput()
         }
     }
 
@@ -138,6 +140,28 @@ public struct HeadlessAcceptanceRunner: Sendable {
         )
     }
 
+    private func uiReadoutOutput() async throws -> String {
+        let baseDirectory = (appSupportURL ?? FileManager.default.temporaryDirectory)
+            .appending(path: "ui-screenshots", directoryHint: .isDirectory)
+
+        let readout = try await MainActor.run {
+            try UIScreenshotReadoutBuilder(outputDirectory: baseDirectory).build()
+        }
+
+        return makeOutput(
+            status: "ok",
+            command: HeadlessAcceptanceCommand.uiReadout.rawValue,
+            fields: [
+                "onboarding_markers": joined(readout.onboardingMarkers),
+                "onboarding_sections": joined(readout.onboardingSections),
+                "onboarding_text": readout.onboardingText,
+                "training_markers": joined(readout.trainingMarkers),
+                "training_sections": joined(readout.trainingSections),
+                "training_text": readout.trainingText
+            ]
+        )
+    }
+
     private func countPairs(using service: DataService) async throws -> Int {
         try await service.pairCount()
     }
@@ -154,6 +178,10 @@ public struct HeadlessAcceptanceRunner: Sendable {
         var lines = ["status=\(status)", "command=\(command)"]
         lines.append(contentsOf: fields.keys.sorted().map { "\($0)=\(fields[$0] ?? "")" })
         return lines.joined(separator: "\n") + "\n"
+    }
+
+    private func joined(_ values: [String]) -> String {
+        values.joined(separator: "|")
     }
 
     private func failureOutput(for command: HeadlessAcceptanceCommand, error: Error) -> String {

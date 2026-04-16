@@ -4,7 +4,10 @@ import Observation
 @MainActor
 @Observable
 final class TrainingCardViewModel {
-    var currentPair: PhonePair?
+    var targets: [TrainingTargetSummary] = []
+    var selectedTargetID: String?
+    var currentCardItems: [TrainingCardItem] = []
+    var currentCardIndex = 0
     var isLoading = false
     var errorMessage: String?
     var perceptionState: PerceptionState = .idle
@@ -16,6 +19,8 @@ final class TrainingCardViewModel {
     var isPlaybackActive = false
     var isSaved = false
     var isHard = false
+    var playbackRate: Float = 1.0
+    var ababIntervalMilliseconds = 300
     var feedbackHighlight: TrainingFeedbackHighlight? {
         switch perceptionState {
         case .correct:
@@ -27,6 +32,39 @@ final class TrainingCardViewModel {
         }
     }
 
+    var currentTarget: TrainingTargetSummary? {
+        guard let selectedTargetID else {
+            return nil
+        }
+
+        return targets.first { $0.id == selectedTargetID }
+    }
+
+    var currentCard: TrainingCardItem? {
+        guard currentCardItems.indices.contains(currentCardIndex) else {
+            return nil
+        }
+
+        return currentCardItems[currentCardIndex]
+    }
+
+    var currentPair: PhonePair? {
+        guard let currentCard, currentCard.kind == .pair else {
+            return nil
+        }
+
+        return PhonePair(
+            id: currentCard.itemID,
+            phonemeContrast: currentTarget?.title ?? currentCard.subtitle,
+            tier: .word,
+            difficulty: 1,
+            leftText: currentCard.leftText,
+            leftIPA: currentCard.leftIPA ?? "",
+            rightText: currentCard.rightText,
+            rightIPA: currentCard.rightIPA ?? ""
+        )
+    }
+
     private let dataService: any TrainingDataServing
     private let audioService: any TrainingAudioServing
     private let sessionDateProvider: @Sendable () -> String
@@ -36,6 +74,13 @@ final class TrainingCardViewModel {
     private var baseElapsedSeconds = 0
     private var cardStartDate: Date?
     private var playbackGeneration = 0
+    private var currentCardIdentity: TrainingCardIdentity? {
+        guard let currentCard else {
+            return nil
+        }
+
+        return TrainingCardIdentity(card: currentCard)
+    }
 
     init(
         dataService: any TrainingDataServing = DataService.shared,
@@ -55,29 +100,53 @@ final class TrainingCardViewModel {
         self.nowProvider = nowProvider
     }
 
+    func applySettings(_ settings: AppSettings) {
+        ababIntervalMilliseconds = settings.ababIntervalMilliseconds
+    }
+
+    func loadInitialState() async {
+        await loadInitialState(forceReload: true)
+    }
+
     func loadInitialPair() async {
-        await loadPair(afterID: nil, forceReload: true)
+        await loadInitialState()
     }
 
     func loadInitialPairIfNeeded() async {
-        guard currentPair == nil else {
+        guard currentCard == nil else {
             return
         }
 
-        await loadPair(afterID: nil, forceReload: false)
+        await loadInitialState(forceReload: false)
+    }
+
+    func loadNextCard() async {
+        await navigate(direction: 1)
     }
 
     func loadNextPair() async {
-        await loadPair(afterID: currentPair?.id, forceReload: false)
+        await loadNextCard()
+    }
+
+    func loadPreviousCard() async {
+        await navigate(direction: -1)
     }
 
     func loadPreviousPair() async {
-        await loadPreviousPair(forceReload: false)
+        await loadPreviousCard()
+    }
+
+    func reloadCurrentTarget() async {
+        await selectTarget(id: selectedTargetID, forceReload: false)
+    }
+
+    func selectTarget(id: String?) async {
+        await selectTarget(id: id, forceReload: false)
     }
 
     func tapTargetCard(_ option: PairOption) async {
-        guard let currentPair else {
-            errorMessage = "Load a training pair before playback."
+        guard let currentCard else {
+            errorMessage = "Load a training card before playback."
             return
         }
 
@@ -85,7 +154,7 @@ final class TrainingCardViewModel {
 
         do {
             try await runPlayback(control: .targetCard(option)) {
-                try await self.audioService.playStandard(for: self.text(for: option, pair: currentPair))
+                try await self.audioService.playStandard(for: self.text(for: option, card: currentCard))
             }
             errorMessage = nil
         } catch {
@@ -94,15 +163,22 @@ final class TrainingCardViewModel {
     }
 
     func playRandomTest() async throws {
-        guard let currentPair else {
-            errorMessage = "Load a training pair before starting a random test."
+        guard let currentCard else {
+            errorMessage = "Load a training card before starting a random test."
             return
         }
 
+        let playbackCard = currentCard
+        let playbackCardIdentity = TrainingCardIdentity(card: playbackCard)
+
         let selectedIndex = try await runPlayback(control: .randomTest) {
             try await self.audioService.playRandomTest(
-                options: [currentPair.leftText, currentPair.rightText]
+                options: [playbackCard.leftText, playbackCard.rightText]
             )
+        }
+
+        guard currentCardIdentity == playbackCardIdentity else {
+            return
         }
 
         pendingAnswer = selectedIndex == 0 ? .left : .right
@@ -113,7 +189,7 @@ final class TrainingCardViewModel {
     }
 
     func submitPerceptionGuess(_ guess: PairOption) async {
-        guard let expected = pendingAnswer, let currentPair else {
+        guard let expected = pendingAnswer, let currentCard else {
             return
         }
 
@@ -139,7 +215,7 @@ final class TrainingCardViewModel {
 
         do {
             try await runPlayback(control: .practiceStandard(expected)) {
-                try await self.audioService.playStandard(for: self.text(for: expected, pair: currentPair))
+                try await self.audioService.playStandard(for: self.text(for: expected, card: currentCard))
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -151,8 +227,8 @@ final class TrainingCardViewModel {
     }
 
     func toggleRecording() async throws {
-        guard let currentPair else {
-            errorMessage = "Load a training pair before recording."
+        guard let currentCard else {
+            errorMessage = "Load a training card before recording."
             return
         }
 
@@ -170,8 +246,8 @@ final class TrainingCardViewModel {
         }
 
         _ = try await audioService.startRecording(
-            itemType: "pair",
-            itemID: currentPair.id,
+            itemType: currentCard.itemType,
+            itemID: currentCard.itemID,
             attempt: sessionStats.practices + 1,
             sessionDate: sessionDateProvider()
         )
@@ -181,25 +257,28 @@ final class TrainingCardViewModel {
     }
 
     func playSelectedStandard() async throws {
-        guard let currentPair else {
-            errorMessage = "Load a training pair before playback."
+        guard let currentCard else {
+            errorMessage = "Load a training card before playback."
             return
         }
 
         try await runPlayback(control: .practiceStandard(selectedPracticeTarget)) {
-            try await self.audioService.playStandard(for: self.text(for: selectedPracticeTarget, pair: currentPair))
+            try await self.audioService.playStandard(
+                for: self.text(for: selectedPracticeTarget, card: currentCard),
+                rate: self.playbackRate
+            )
         }
     }
 
     func playUserRecording() async throws {
         try await runPlayback(control: .userRecording) {
-            try await self.audioService.playUserRecording()
+            try await self.audioService.playUserRecording(rate: self.playbackRate)
         }
     }
 
     func toggleABABLoop() async throws {
-        guard let currentPair else {
-            errorMessage = "Load a training pair before starting A/B playback."
+        guard let currentCard else {
+            errorMessage = "Load a training card before starting A/B playback."
             return
         }
 
@@ -209,7 +288,9 @@ final class TrainingCardViewModel {
         }
 
         try await audioService.startABABLoop(
-            standardText: text(for: selectedPracticeTarget, pair: currentPair)
+            standardText: text(for: selectedPracticeTarget, card: currentCard),
+            rate: playbackRate,
+            silenceNanoseconds: UInt64(ababIntervalMilliseconds) * 1_000_000
         )
         beginPlayback(control: .ababLoop(selectedPracticeTarget))
         isABABLooping = true
@@ -232,16 +313,17 @@ final class TrainingCardViewModel {
     }
 
     func toggleSaved() async throws {
-        guard let currentPair else {
-            errorMessage = "Load a training pair before saving."
+        guard let currentCard else {
+            errorMessage = "Load a training card before saving."
             return
         }
 
         let nextValue = !isSaved
 
         do {
-            try await dataService.updatePairTagState(
-                for: currentPair.id,
+            try await dataService.updateTagState(
+                itemType: currentCard.itemType,
+                itemID: currentCard.itemID,
                 sessionDate: sessionDateProvider(),
                 isSaved: nextValue,
                 isHard: isHard
@@ -254,16 +336,17 @@ final class TrainingCardViewModel {
     }
 
     func toggleHard() async throws {
-        guard let currentPair else {
-            errorMessage = "Load a training pair before marking difficulty."
+        guard let currentCard else {
+            errorMessage = "Load a training card before marking difficulty."
             return
         }
 
         let nextValue = !isHard
 
         do {
-            try await dataService.updatePairTagState(
-                for: currentPair.id,
+            try await dataService.updateTagState(
+                itemType: currentCard.itemType,
+                itemID: currentCard.itemID,
                 sessionDate: sessionDateProvider(),
                 isSaved: isSaved,
                 isHard: nextValue
@@ -275,51 +358,72 @@ final class TrainingCardViewModel {
         }
     }
 
-    private func loadPair(afterID: Int64?, forceReload: Bool) async {
+    private func loadInitialState(forceReload: Bool) async {
         guard !isLoading else {
             return
-        }
-
-        if !forceReload, currentPair == nil {
-            errorMessage = nil
         }
 
         isLoading = true
         defer { isLoading = false }
 
         do {
-            try await prepareForPairNavigation()
-            try await persistCurrentPairProgressIfNeeded()
-            let pair = try await dataService.fetchNextPair(afterID: afterID)
-            try await applyLoadedPair(pair)
+            if forceReload || targets.isEmpty {
+                targets = try await dataService.fetchTrainingTargets()
+            }
+
+            let targetID = selectedTargetID ?? targets.first?.id
+            await selectTarget(id: targetID, forceReload: forceReload)
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
-    private func loadPreviousPair(forceReload: Bool) async {
+    private func selectTarget(id: String?, forceReload: Bool) async {
+        guard let id else {
+            clearCurrentCardState()
+            return
+        }
+
+        do {
+            try await prepareForCardNavigation()
+            try await persistCurrentCardProgressIfNeeded()
+
+            if forceReload || currentCardItems.isEmpty || selectedTargetID != id {
+                currentCardItems = try await dataService.fetchTrainingCards(forTargetID: id)
+            }
+
+            selectedTargetID = id
+            currentCardIndex = 0
+            try await applyCurrentCard()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func navigate(direction: Int) async {
         guard !isLoading else {
             return
         }
 
-        if !forceReload, currentPair == nil {
-            errorMessage = nil
+        guard !currentCardItems.isEmpty else {
+            return
         }
 
         isLoading = true
         defer { isLoading = false }
 
         do {
-            try await prepareForPairNavigation()
-            try await persistCurrentPairProgressIfNeeded()
-            let pair = try await dataService.fetchPreviousPair(beforeID: currentPair?.id)
-            try await applyLoadedPair(pair)
+            try await prepareForCardNavigation()
+            try await persistCurrentCardProgressIfNeeded()
+            let nextIndex = wrappedIndex(from: currentCardIndex, direction: direction, count: currentCardItems.count)
+            currentCardIndex = nextIndex
+            try await applyCurrentCard()
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
-    private func prepareForPairNavigation() async throws {
+    private func prepareForCardNavigation() async throws {
         if isPlaybackActive {
             await audioService.stop()
             clearPlaybackState()
@@ -332,16 +436,15 @@ final class TrainingCardViewModel {
         }
     }
 
-    private func persistCurrentPairProgressIfNeeded() async throws {
-        guard currentPair != nil else {
+    private func persistCurrentCardProgressIfNeeded() async throws {
+        guard currentCard != nil else {
             return
         }
 
         try await persistSessionStats()
     }
 
-    private func applyLoadedPair(_ pair: PhonePair?) async throws {
-        currentPair = pair
+    private func applyCurrentCard() async throws {
         pendingAnswer = nil
         perceptionState = .idle
         selectedPracticeTarget = .left
@@ -350,38 +453,47 @@ final class TrainingCardViewModel {
         isRecording = false
         isABABLooping = false
 
-        if let pair {
-            let tagState = try await dataService.fetchPairTagState(for: pair.id)
-            sessionStats = try await dataService.fetchPairSessionStats(
-                for: pair.id,
-                sessionDate: sessionDateProvider()
-            )
-            isSaved = tagState.isSaved
-            isHard = tagState.isHard
-            baseElapsedSeconds = sessionStats.elapsedSeconds
-            cardStartDate = nowProvider()
-            startTimer()
-        } else {
-            timerTask?.cancel()
-            timerTask = nil
-            sessionStats = SessionStats()
-            baseElapsedSeconds = 0
-            cardStartDate = nil
-            isSaved = false
-            isHard = false
+        guard let currentCard else {
+            clearCurrentCardState()
+            return
         }
 
+        let tagState = try await dataService.fetchTagState(itemType: currentCard.itemType, itemID: currentCard.itemID)
+        sessionStats = try await dataService.fetchSessionStats(
+            itemType: currentCard.itemType,
+            itemID: currentCard.itemID,
+            sessionDate: sessionDateProvider()
+        )
+        isSaved = tagState.isSaved
+        isHard = tagState.isHard
+        baseElapsedSeconds = sessionStats.elapsedSeconds
+        cardStartDate = nowProvider()
+        startTimer()
         errorMessage = nil
     }
 
+    private func clearCurrentCardState() {
+        timerTask?.cancel()
+        timerTask = nil
+        currentCardItems = []
+        currentCardIndex = 0
+        sessionStats = SessionStats()
+        baseElapsedSeconds = 0
+        cardStartDate = nil
+        isSaved = false
+        isHard = false
+        selectedTargetID = nil
+    }
+
     private func persistSessionStats() async throws {
-        guard let currentPair else {
+        guard let currentCard else {
             return
         }
 
         refreshElapsedTime()
-        try await dataService.updatePairSessionStats(
-            for: currentPair.id,
+        try await dataService.updateSessionStats(
+            itemType: currentCard.itemType,
+            itemID: currentCard.itemID,
             sessionDate: sessionDateProvider(),
             stats: sessionStats,
             isSaved: isSaved,
@@ -446,12 +558,32 @@ final class TrainingCardViewModel {
         }
     }
 
-    private func text(for option: PairOption, pair: PhonePair) -> String {
+    private func text(for option: PairOption, card: TrainingCardItem) -> String {
         switch option {
         case .left:
-            return pair.leftText
+            return card.leftText
         case .right:
-            return pair.rightText
+            return card.rightText
         }
+    }
+
+    private func wrappedIndex(from current: Int, direction: Int, count: Int) -> Int {
+        guard count > 0 else {
+            return 0
+        }
+
+        return (current + direction + count) % count
+    }
+}
+
+private struct TrainingCardIdentity: Equatable {
+    let targetID: String
+    let itemType: String
+    let itemID: Int64
+
+    init(card: TrainingCardItem) {
+        targetID = card.targetID
+        itemType = card.itemType
+        itemID = card.itemID
     }
 }

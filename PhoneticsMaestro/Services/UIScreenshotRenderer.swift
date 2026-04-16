@@ -46,18 +46,31 @@ struct UIScreenshotRenderer {
             sessionDateProvider: { "2026-04-16" }
         )
 
-        let pair = PhonePair(
-            id: 1,
-            phonemeContrast: "ʌ-æ",
-            tier: .phoneme,
-            difficulty: 1,
-            leftText: "but",
-            leftIPA: "/bʌt/",
-            rightText: "bat",
-            rightIPA: "/bæt/"
-        )
-
-        trainingViewModel.currentPair = pair
+        trainingViewModel.targets = [
+            TrainingTargetSummary(
+                id: "pair:ʌ-æ",
+                group: .soundContrasts,
+                title: "ʌ-æ",
+                subtitle: "but / bat",
+                currentItemType: "pair"
+            )
+        ]
+        trainingViewModel.selectedTargetID = "pair:ʌ-æ"
+        trainingViewModel.currentCardItems = [
+            TrainingCardItem(
+                kind: .pair,
+                itemType: "pair",
+                itemID: 1,
+                targetID: "pair:ʌ-æ",
+                title: "Word Contrast",
+                subtitle: "but / bat",
+                leftText: "but",
+                leftIPA: "/bʌt/",
+                rightText: "bat",
+                rightIPA: "/bæt/",
+                tierLabel: "Word"
+            )
+        ]
         trainingViewModel.selectedPracticeTarget = .left
         trainingViewModel.sessionStats = SessionStats(listens: 12, correct: 9, practices: 4, elapsedSeconds: 154)
         trainingViewModel.perceptionState = .awaitingAnswer
@@ -95,6 +108,19 @@ private enum UIScreenshotRendererError: Error {
 }
 
 private actor ScreenshotTrainingDataService: TrainingDataServing {
+    func fetchTrainingTargets() async throws -> [TrainingTargetSummary] { [] }
+    func fetchTrainingCards(forTargetID targetID: String) async throws -> [TrainingCardItem] { [] }
+    func fetchTagState(itemType: String, itemID: Int64) async throws -> TrainingTagState { .init(isSaved: false, isHard: false) }
+    func fetchSessionStats(itemType: String, itemID: Int64, sessionDate: String) async throws -> SessionStats { .init() }
+    func updateTagState(itemType: String, itemID: Int64, sessionDate: String, isSaved: Bool, isHard: Bool) async throws {}
+    func updateSessionStats(
+        itemType: String,
+        itemID: Int64,
+        sessionDate: String,
+        stats: SessionStats,
+        isSaved: Bool,
+        isHard: Bool
+    ) async throws {}
     func fetchNextPair(afterID: Int64?) async throws -> PhonePair? { nil }
     func fetchPreviousPair(beforeID: Int64?) async throws -> PhonePair? { nil }
     func fetchPairTagState(for itemID: Int64) async throws -> TrainingTagState { .init(isSaved: false, isHard: false) }
@@ -113,6 +139,7 @@ private actor ScreenshotTrainingAudioService: TrainingAudioServing {
     func currentState() async -> AudioState { .idle }
     func playRandomTest(options: [String]) async throws -> Int { 0 }
     func playStandard(for text: String) async throws {}
+    func playStandard(for text: String, rate: Float) async throws {}
     func startRecording(itemType: String, itemID: Int64, attempt: Int, sessionDate: String) async throws -> URL {
         FileManager.default.temporaryDirectory.appending(path: "recording.m4a", directoryHint: .notDirectory)
     }
@@ -120,7 +147,9 @@ private actor ScreenshotTrainingAudioService: TrainingAudioServing {
         FileManager.default.temporaryDirectory.appending(path: "recording.m4a", directoryHint: .notDirectory)
     }
     func playUserRecording() async throws {}
+    func playUserRecording(rate: Float) async throws {}
     func startABABLoop(standardText: String) async throws {}
+    func startABABLoop(standardText: String, rate: Float, silenceNanoseconds: UInt64) async throws {}
     func stop() async {}
 }
 
@@ -136,9 +165,23 @@ private struct ScreenshotShellView<Detail: View>: View {
                         .font(.headline)
                         .padding(.bottom, 10)
 
-                    shellSidebarItem("Training", selected: true)
+                    shellSidebarItem("Begin", selected: true)
                     shellSidebarItem("History", selected: false)
                     shellSidebarItem("Settings", selected: false)
+
+                    shellSidebarCard(
+                        "CURRENT TARGET",
+                        primary: "ʌ-æ",
+                        secondary: "but / bat",
+                        tertiary: "Sound Contrasts"
+                    )
+
+                    shellSidebarCard(
+                        "SESSION",
+                        primary: "12 / 9",
+                        secondary: "Listens / Correct",
+                        tertiary: "02:34"
+                    )
 
                     Spacer()
                 }
@@ -172,5 +215,28 @@ private struct ScreenshotShellView<Detail: View>: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(selected ? Color.accentColor.opacity(0.12) : Color.clear)
             )
+    }
+
+    private func shellSidebarCard(
+        _ title: String,
+        primary: String,
+        secondary: String,
+        tertiary: String
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+            Text(primary)
+                .font(.title3.weight(.bold))
+            Text(secondary)
+                .foregroundStyle(.secondary)
+            Text(tertiary)
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18))
     }
 }

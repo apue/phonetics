@@ -51,6 +51,57 @@ final class DataServiceTests: XCTestCase {
         XCTAssertEqual(wrappedPair?.rightText, lastPair?.rightText)
     }
 
+    func testFetchTrainingTargetsIncludesPairAndSentenceTargets() async throws {
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = DataService(appSupportURL: appSupportURL)
+        try await service.initialize()
+
+        let targets = try await service.fetchTrainingTargets()
+
+        XCTAssertTrue(targets.contains { $0.id == "pair:ʌ-æ" })
+        XCTAssertTrue(targets.contains { $0.id == "sentence:linking" })
+        XCTAssertTrue(targets.contains { $0.id == "sentence:stress" })
+    }
+
+    func testFetchTrainingCardsBuildsSentenceComparisonCards() async throws {
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = DataService(appSupportURL: appSupportURL)
+        try await service.initialize()
+
+        let cards = try await service.fetchTrainingCards(forTargetID: "sentence:linking")
+
+        XCTAssertEqual(cards.count, 2)
+        XCTAssertEqual(cards.first?.itemType, "sentence")
+        XCTAssertEqual(cards.first?.leftText, "Pick it up.")
+        XCTAssertEqual(cards.first?.rightText, "Turn it on.")
+    }
+
+    func testBuildSentenceTrainingCardsSkipsSentencesWithoutIDs() async throws {
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = DataService(appSupportURL: appSupportURL)
+        let sentences = [
+            Sentence(id: nil, text: "Ignore me.", ipa: "/ɪɡˈnɔːr mi/", phenomenon: "linking", notes: nil, tier: .sentence),
+            Sentence(id: 11, text: "Pick it up.", ipa: "/pɪk‿ɪt‿ʌp/", phenomenon: "linking", notes: nil, tier: .sentence),
+            Sentence(id: 12, text: "Turn it on.", ipa: "/tɜːn‿ɪt‿ɒn/", phenomenon: "linking", notes: nil, tier: .sentence)
+        ]
+
+        let cards = await service.buildSentenceTrainingCards(
+            targetID: "sentence:linking",
+            phenomenon: "linking",
+            sentences: sentences
+        )
+
+        XCTAssertEqual(cards.count, 2)
+        XCTAssertEqual(cards.map(\.itemID), [11, 12])
+        XCTAssertTrue(cards.allSatisfy { $0.itemID > 0 })
+    }
+
     func testUpdatePairTagStatePersistsSavedAndHardFlags() async throws {
         let appSupportURL = makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: appSupportURL) }
@@ -95,6 +146,35 @@ final class DataServiceTests: XCTestCase {
         XCTAssertEqual(updatedStats, sessionStats)
         let updatedTags = try await service.fetchPairTagState(for: 1)
         XCTAssertEqual(updatedTags, TrainingTagState(isSaved: true, isHard: false))
+    }
+
+    func testGenericSentenceProgressPersistenceUsesItemTypeSentence() async throws {
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = DataService(appSupportURL: appSupportURL)
+        try await service.initialize()
+
+        try await service.updateTagState(
+            itemType: "sentence",
+            itemID: 1,
+            sessionDate: "2026-04-13",
+            isSaved: true,
+            isHard: false
+        )
+        try await service.updateSessionStats(
+            itemType: "sentence",
+            itemID: 1,
+            sessionDate: "2026-04-13",
+            stats: SessionStats(listens: 2, correct: 1, practices: 1, elapsedSeconds: 20),
+            isSaved: true,
+            isHard: false
+        )
+
+        let state = try await service.fetchTagState(itemType: "sentence", itemID: 1)
+        let stats = try await service.fetchSessionStats(itemType: "sentence", itemID: 1, sessionDate: "2026-04-13")
+        XCTAssertEqual(state, TrainingTagState(isSaved: true, isHard: false))
+        XCTAssertEqual(stats, SessionStats(listens: 2, correct: 1, practices: 1, elapsedSeconds: 20))
     }
 
     func testFetchHistorySessionSummariesAggregatesByDate() async throws {
