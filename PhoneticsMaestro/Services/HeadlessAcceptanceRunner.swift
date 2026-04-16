@@ -41,6 +41,8 @@ public struct HeadlessAcceptanceRunner: Sendable {
             return try await databaseSummaryOutput(using: service)
         case .smokeTest:
             return try await smokeTestOutput(using: service)
+        case .uiScreenshots:
+            return try await uiScreenshotOutput()
         }
     }
 
@@ -114,6 +116,24 @@ public struct HeadlessAcceptanceRunner: Sendable {
                     settings.preferredMicrophoneName,
                     String(settings.ababIntervalMilliseconds)
                 ].joined(separator: "|")
+            ]
+        )
+    }
+
+    private func uiScreenshotOutput() async throws -> String {
+        let baseDirectory = (appSupportURL ?? FileManager.default.temporaryDirectory)
+            .appending(path: "ui-screenshots", directoryHint: .isDirectory)
+
+        let rendered = try await MainActor.run {
+            try UIScreenshotRenderer(outputDirectory: baseDirectory).render()
+        }
+
+        return makeOutput(
+            status: "ok",
+            command: HeadlessAcceptanceCommand.uiScreenshots.rawValue,
+            fields: [
+                "onboarding_png": rendered.onboarding.path,
+                "training_png": rendered.training.path
             ]
         )
     }

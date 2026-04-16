@@ -1,0 +1,151 @@
+<svg width="1440" height="960" viewBox="0 0 1440 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="960" fill="#F5F5F7"/>
+
+  <!-- Window -->
+  <rect x="120" y="80" width="1200" height="800" rx="24" fill="white" stroke="#D9D9DE"/>
+  <rect x="120" y="80" width="1200" height="56" rx="24" fill="#F1F1F4"/>
+  <rect x="120" y="112" width="1200" height="24" fill="#F1F1F4"/>
+  <circle cx="156" cy="108" r="7" fill="#FF5F57"/>
+  <circle cx="180" cy="108" r="7" fill="#FEBC2E"/>
+  <circle cx="204" cy="108" r="7" fill="#28C840"/>
+
+  <!-- App title -->
+  <text x="720" y="114" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="18" font-weight="600" fill="#2B2B2F">
+    Pronunciation Trainer
+  </text>
+
+  <!-- Left mini nav -->
+  <rect x="150" y="170" width="190" height="660" rx="20" fill="#FAFAFC" stroke="#E6E6EB"/>
+  <text x="180" y="210" font-family="Inter, SF Pro Display, Arial" font-size="16" font-weight="700" fill="#2B2B2F">Navigation</text>
+
+  <rect x="170" y="235" width="150" height="44" rx="12" fill="#E9EEFf"/>
+  <text x="245" y="263" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="15" font-weight="600" fill="#2457D6">Begin</text>
+
+  <rect x="170" y="291" width="150" height="44" rx="12" fill="white" stroke="#E1E1E6"/>
+  <text x="245" y="319" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="15" font-weight="500" fill="#4A4A52">History</text>
+
+  <rect x="170" y="347" width="150" height="44" rx="12" fill="white" stroke="#E1E1E6"/>
+  <text x="245" y="375" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="15" font-weight="500" fill="#4A4A52">Settings</text>
+
+  <!-- Main card area -->
+  <rect x="370" y="170" width="900" height="660" rx="28" fill="#FCFCFE" stroke="#E6E6EB"/>
+
+  <!-- Header -->
+  <text x="420" y="222" font-family="Inter, SF Pro Display, Arial" font-size="28" font-weight="700" fill="#1F1F24">
+    Word Contrast
+  </text>
+  <text x="420" y="252" font-family="Inter, SF Pro Display, Arial" font-size="15" font-weight="400" fill="#666A73">
+    Train the contrast between /ʌ/ and /æ/. Listen, identify, then practice by comparing your voice with the standard.
+  </text>
+
+  <!-- Top right actions -->
+  <rect x="1110" y="192" width="60" height="34" rx="10" fill="white" stroke="#E1E1E6"/>
+  <text x="1140" y="214" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="13" font-weight="500" fill="#4A4A52">★ Save</text>
+
+  <rect x="1180" y="192" width="70" height="34" rx="10" fill="white" stroke="#E1E1E6"/>
+  <text x="1215" y="214" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="13" font-weight="500" fill="#4A4A52">! Hard</text>
+
+  <!-- Contrast pair -->
+  <rect x="420" y="286" width="360" height="120" rx="22" fill="white" stroke="#E3E4EA"/>
+  <text x="600" y="328" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="18" font-weight="600" fill="#7A7E87">
+    LEFT TARGET
+  </text>
+  <text x="600" y="372" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="42" font-weight="700" fill="#1F1F24">
+    but
+  </text>
+  <text x="600" y="397" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="18" font-weight="500" fill="#6A6E78">
+    /bʌt/
+  </text>
+
+  <rect x="860" y="286" width="360" height="120" rx="22" fill="white" stroke="#E3E4EA"/>
+  <text x="1040" y="328" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="18" font-weight="600" fill="#7A7E87">
+    RIGHT TARGET
+  </text>
+  <text x="1040" y="372" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="42" font-weight="700" fill="#1F1F24">
+    bat
+  </text>
+  <text x="1040" y="397" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="18" font-weight="500" fill="#6A6E78">
+    /bæt/
+  </text>
+
+  <!-- Listening panel -->
+  <rect x="420" y="436" width="380" height="250" rx="22" fill="white" stroke="#E3E4EA"/>
+  <text x="450" y="475" font-family="Inter, SF Pro Display, Arial" font-size="22" font-weight="700" fill="#1F1F24">
+    Listen
+  </text>
+  <text x="450" y="501" font-family="Inter, SF Pro Display, Arial" font-size="14" font-weight="400" fill="#6A6E78">
+    Play a random target and choose what you heard.
+  </text>
+
+  <rect x="450" y="528" width="320" height="54" rx="16" fill="#2457D6"/>
+  <text x="610" y="562" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="18" font-weight="700" fill="white">
+    ▶ Random Test
+  </text>
+
+  <rect x="450" y="598" width="145" height="52" rx="16" fill="#EEF3FF" stroke="#C9D7FF"/>
+  <text x="522.5" y="631" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="18" font-weight="600" fill="#2457D6">
+    but
+  </text>
+
+  <rect x="625" y="598" width="145" height="52" rx="16" fill="#FFF1F1" stroke="#FFD4D4"/>
+  <text x="697.5" y="631" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="18" font-weight="600" fill="#C94B4B">
+    bat
+  </text>
+
+  <!-- Practice panel -->
+  <rect x="840" y="436" width="380" height="250" rx="22" fill="white" stroke="#E3E4EA"/>
+  <text x="870" y="475" font-family="Inter, SF Pro Display, Arial" font-size="22" font-weight="700" fill="#1F1F24">
+    Practice
+  </text>
+  <text x="870" y="501" font-family="Inter, SF Pro Display, Arial" font-size="14" font-weight="400" fill="#6A6E78">
+    Record yourself, replay both versions, and compare.
+  </text>
+
+  <rect x="870" y="528" width="320" height="54" rx="16" fill="#111318"/>
+  <text x="1030" y="562" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="18" font-weight="700" fill="white">
+    ● Record / Practice
+  </text>
+
+  <rect x="870" y="598" width="96" height="44" rx="14" fill="#F7F7FA" stroke="#E1E1E6"/>
+  <text x="918" y="626" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="14" font-weight="500" fill="#4A4A52">
+    Me
+  </text>
+
+  <rect x="982" y="598" width="96" height="44" rx="14" fill="#F7F7FA" stroke="#E1E1E6"/>
+  <text x="1030" y="626" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="14" font-weight="500" fill="#4A4A52">
+    Standard
+  </text>
+
+  <rect x="1094" y="598" width="96" height="44" rx="14" fill="#F7F7FA" stroke="#E1E1E6"/>
+  <text x="1142" y="626" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="14" font-weight="500" fill="#4A4A52">
+    A / B
+  </text>
+
+  <rect x="870" y="650" width="320" height="22" rx="11" fill="#F0F1F5"/>
+  <rect x="872" y="652" width="160" height="18" rx="9" fill="#DCE6FF"/>
+  <circle cx="1032" cy="661" r="13" fill="#2457D6"/>
+  <text x="870" y="695" font-family="Inter, SF Pro Display, Arial" font-size="13" font-weight="500" fill="#6A6E78">
+    ABAB Loop
+  </text>
+
+  <!-- Bottom stats -->
+  <rect x="420" y="716" width="800" height="82" rx="20" fill="white" stroke="#E3E4EA"/>
+
+  <text x="455" y="748" font-family="Inter, SF Pro Display, Arial" font-size="13" font-weight="600" fill="#7A7E87">LISTENS</text>
+  <text x="455" y="777" font-family="Inter, SF Pro Display, Arial" font-size="24" font-weight="700" fill="#1F1F24">12</text>
+
+  <text x="610" y="748" font-family="Inter, SF Pro Display, Arial" font-size="13" font-weight="600" fill="#7A7E87">CORRECT</text>
+  <text x="610" y="777" font-family="Inter, SF Pro Display, Arial" font-size="24" font-weight="700" fill="#1F1F24">9</text>
+
+  <text x="765" y="748" font-family="Inter, SF Pro Display, Arial" font-size="13" font-weight="600" fill="#7A7E87">PRACTICES</text>
+  <text x="765" y="777" font-family="Inter, SF Pro Display, Arial" font-size="24" font-weight="700" fill="#1F1F24">4</text>
+
+  <text x="940" y="748" font-family="Inter, SF Pro Display, Arial" font-size="13" font-weight="600" fill="#7A7E87">TIME</text>
+  <text x="940" y="777" font-family="Inter, SF Pro Display, Arial" font-size="24" font-weight="700" fill="#1F1F24">02:34</text>
+
+  <!-- Footer nav -->
+  <rect x="1085" y="734" width="135" height="46" rx="16" fill="#2457D6"/>
+  <text x="1152.5" y="763" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="16" font-weight="700" fill="white">
+    Next Card →
+  </text>
+</svg>

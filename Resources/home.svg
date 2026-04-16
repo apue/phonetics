@@ -1,0 +1,37 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="800" fill="#F5F5F7"/>
+
+  <rect x="180" y="80" width="840" height="640" rx="28" fill="white" stroke="#D9D9DE"/>
+  <rect x="180" y="80" width="840" height="56" rx="28" fill="#F1F1F4"/>
+  <rect x="180" y="112" width="840" height="24" fill="#F1F1F4"/>
+
+  <circle cx="216" cy="108" r="7" fill="#FF5F57"/>
+  <circle cx="240" cy="108" r="7" fill="#FEBC2E"/>
+  <circle cx="264" cy="108" r="7" fill="#28C840"/>
+
+  <text x="600" y="114" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="18" font-weight="600" fill="#2B2B2F">
+    Pronunciation Trainer
+  </text>
+
+  <text x="600" y="210" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="40" font-weight="800" fill="#1F1F24">
+    Welcome Back
+  </text>
+  <text x="600" y="246" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="17" font-weight="400" fill="#6A6E78">
+    Choose where to go next.
+  </text>
+
+  <rect x="360" y="310" width="480" height="86" rx="24" fill="#2457D6"/>
+  <text x="600" y="363" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="28" font-weight="700" fill="white">
+    Begin
+  </text>
+
+  <rect x="360" y="430" width="480" height="86" rx="24" fill="white" stroke="#E1E1E6"/>
+  <text x="600" y="483" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="28" font-weight="600" fill="#2B2B2F">
+    History
+  </text>
+
+  <rect x="360" y="550" width="480" height="86" rx="24" fill="white" stroke="#E1E1E6"/>
+  <text x="600" y="603" text-anchor="middle" font-family="Inter, SF Pro Display, Arial" font-size="28" font-weight="600" fill="#2B2B2F">
+    Settings
+  </text>
+</svg>

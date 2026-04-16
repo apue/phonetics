@@ -4,10 +4,11 @@ import SwiftUI
 @MainActor
 @Observable
 public final class AppViewModel {
-    var selectedScreen: AppScreen = .welcome
+    var selectedScreen: AppScreen = .training
     var splitViewVisibility: NavigationSplitViewVisibility = .all
     var isInitializing = false
     var isInitialized = false
+    var shouldShowOnboarding = false
     var errorMessage: String?
 
     var isSidebarCollapsed: Bool {
@@ -15,13 +16,19 @@ public final class AppViewModel {
     }
 
     let trainingCardViewModel: TrainingCardViewModel
+    private let settingsService: any SettingsDataServing
 
     public init() {
         trainingCardViewModel = TrainingCardViewModel()
+        settingsService = DataService.shared
     }
 
-    init(trainingCardViewModel: TrainingCardViewModel) {
+    init(
+        trainingCardViewModel: TrainingCardViewModel = TrainingCardViewModel(),
+        settingsService: any SettingsDataServing = DataService.shared
+    ) {
         self.trainingCardViewModel = trainingCardViewModel
+        self.settingsService = settingsService
     }
 
     public func initialize() async {
@@ -34,6 +41,9 @@ public final class AppViewModel {
 
         do {
             try await DataService.shared.initialize()
+            let settings = try await settingsService.fetchSettings()
+            shouldShowOnboarding = !settings.hasDismissedOnboarding
+            selectedScreen = .training
             isInitialized = true
             await trainingCardViewModel.loadInitialPair()
         } catch {
@@ -41,11 +51,18 @@ public final class AppViewModel {
         }
     }
 
-    func showTraining() {
-        selectedScreen = .training
+    func dismissOnboarding() async {
+        guard shouldShowOnboarding else {
+            return
+        }
 
-        Task {
-            await trainingCardViewModel.loadInitialPairIfNeeded()
+        do {
+            var settings = try await settingsService.fetchSettings()
+            settings.hasDismissedOnboarding = true
+            try await settingsService.updateSettings(settings)
+            shouldShowOnboarding = false
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 

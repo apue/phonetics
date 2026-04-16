@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phonetics Maestro Design Comparison</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef1f5;
+      --panel: #ffffff;
+      --border: #d9dee7;
+      --text: #1c222b;
+      --muted: #687281;
+      --accent: #2e5eea;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "SF Pro Display", Inter, Arial, sans-serif;
+      background: linear-gradient(180deg, #f5f7fb 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    main {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 36px 28px 56px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 40px;
+      line-height: 1.05;
+    }
+
+    p.lead {
+      margin: 0 0 28px;
+      font-size: 18px;
+      color: var(--muted);
+    }
+
+    .section {
+      margin-top: 28px;
+      padding: 22px;
+      background: rgba(255, 255, 255, 0.66);
+      border: 1px solid rgba(217, 222, 231, 0.9);
+      border-radius: 24px;
+      backdrop-filter: blur(18px);
+    }
+
+    .section h2 {
+      margin: 0 0 6px;
+      font-size: 26px;
+    }
+
+    .section p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      padding: 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: 0 18px 48px rgba(35, 50, 80, 0.06);
+    }
+
+    .meta {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .meta h3 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .badge {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #eef3ff;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .frame {
+      aspect-ratio: 16 / 10;
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      background: #f7f8fb;
+    }
+
+    .frame img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      background: #f7f8fb;
+    }
+
+    ul.notes {
+      margin: 14px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    a.open {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    @media (max-width: 1100px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Phonetics Maestro Design Comparison</h1>
+    <p class="lead">Original mockups vs revised native-editorial mockups. Open the SVG files directly if you want to inspect them at full size.</p>
+
+    <section class="section">
+      <h2>Home</h2>
+      <p>The revision turns welcome into one-time onboarding so Training can remain the persistent default workspace.</p>
+      <div class="grid">
+        <article class="card">
+          <div class="meta">
+            <h3>Original</h3>
+            <span class="badge">home.svg</span>
+          </div>
+          <div class="frame">
+            <img src="home.svg" alt="Original home design">
+          </div>
+          <ul class="notes">
+            <li>Stronger landing-page emphasis.</li>
+            <li>But navigation is duplicated once the real sidebar exists.</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <div class="meta">
+            <h3>Revised</h3>
+            <span class="badge">home-native-editorial.svg</span>
+          </div>
+          <div class="frame">
+            <img src="home-native-editorial.svg" alt="Revised home design">
+          </div>
+          <ul class="notes">
+            <li>Welcome becomes a one-time onboarding layer, not a permanent page.</li>
+            <li>After first run, Training is the default destination and sidebar stays stable.</li>
+            <li><a class="open" href="home-native-editorial.svg">Open SVG directly</a></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Training Card</h2>
+      <p>The revision uses a stronger desktop layout while keeping the actual interaction model from the current app.</p>
+      <div class="grid">
+        <article class="card">
+          <div class="meta">
+            <h3>Original</h3>
+            <span class="badge">card.svg</span>
+          </div>
+          <div class="frame">
+            <img src="card.svg" alt="Original training card design">
+          </div>
+          <ul class="notes">
+            <li>Good spatial grouping and clean visual rhythm.</li>
+            <li>But it omits several real controls and states from the current product.</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <div class="meta">
+            <h3>Revised</h3>
+            <span class="badge">card-native-editorial.svg</span>
+          </div>
+          <div class="frame">
+            <img src="card-native-editorial.svg" alt="Revised training card design">
+          </div>
+          <ul class="notes">
+            <li>Preserves sidebar and top-level app structure.</li>
+            <li>Keeps Stop, Save, Hard, stats, and card navigation visible.</li>
+            <li><a class="open" href="card-native-editorial.svg">Open SVG directly</a></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
