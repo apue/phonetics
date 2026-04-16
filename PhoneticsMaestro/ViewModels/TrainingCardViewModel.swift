@@ -74,6 +74,13 @@ final class TrainingCardViewModel {
     private var baseElapsedSeconds = 0
     private var cardStartDate: Date?
     private var playbackGeneration = 0
+    private var currentCardIdentity: TrainingCardIdentity? {
+        guard let currentCard else {
+            return nil
+        }
+
+        return TrainingCardIdentity(card: currentCard)
+    }
 
     init(
         dataService: any TrainingDataServing = DataService.shared,
@@ -162,6 +169,7 @@ final class TrainingCardViewModel {
         }
 
         let playbackCard = currentCard
+        let playbackCardIdentity = TrainingCardIdentity(card: playbackCard)
 
         let selectedIndex = try await runPlayback(control: .randomTest) {
             try await self.audioService.playRandomTest(
@@ -169,7 +177,7 @@ final class TrainingCardViewModel {
             )
         }
 
-        guard self.currentCard?.id == playbackCard.id else {
+        guard currentCardIdentity == playbackCardIdentity else {
             return
         }
 
@@ -565,5 +573,17 @@ final class TrainingCardViewModel {
         }
 
         return (current + direction + count) % count
+    }
+}
+
+private struct TrainingCardIdentity: Equatable {
+    let targetID: String
+    let itemType: String
+    let itemID: Int64
+
+    init(card: TrainingCardItem) {
+        targetID = card.targetID
+        itemType = card.itemType
+        itemID = card.itemID
     }
 }
