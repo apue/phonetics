@@ -16,18 +16,24 @@ public final class AppViewModel {
     }
 
     let trainingCardViewModel: TrainingCardViewModel
+    private let appInitializer: any AppInitializing
     private let settingsService: any SettingsDataServing
 
-    public init() {
-        trainingCardViewModel = TrainingCardViewModel()
-        settingsService = DataService.shared
+    public convenience init() {
+        self.init(
+            trainingCardViewModel: TrainingCardViewModel(),
+            appInitializer: DataService.shared,
+            settingsService: DataService.shared
+        )
     }
 
     init(
         trainingCardViewModel: TrainingCardViewModel = TrainingCardViewModel(),
+        appInitializer: any AppInitializing = DataService.shared,
         settingsService: any SettingsDataServing = DataService.shared
     ) {
         self.trainingCardViewModel = trainingCardViewModel
+        self.appInitializer = appInitializer
         self.settingsService = settingsService
     }
 
@@ -40,7 +46,7 @@ public final class AppViewModel {
         defer { isInitializing = false }
 
         do {
-            try await DataService.shared.initialize()
+            try await appInitializer.initialize()
             let settings = try await settingsService.fetchSettings()
             shouldShowOnboarding = !settings.hasDismissedOnboarding
             selectedScreen = .training
