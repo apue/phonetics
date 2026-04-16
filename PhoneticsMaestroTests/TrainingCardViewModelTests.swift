@@ -47,6 +47,30 @@ final class TrainingCardViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.perceptionState, .awaitingAnswer)
     }
 
+    func testPlayRandomTestDoesNotAttributeListenAfterTargetChangeDuringPlayback() async throws {
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 1, playbackMode: .controlled)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService
+        )
+
+        await viewModel.loadInitialPair()
+        let playbackTask = Task {
+            try await viewModel.playRandomTest()
+        }
+
+        await audioService.waitUntilPlaybackStarts(count: 1)
+        await viewModel.selectTarget(id: "sentence:linking")
+        try await playbackTask.value
+
+        XCTAssertEqual(viewModel.currentCard?.itemType, "sentence")
+        XCTAssertEqual(viewModel.currentCard?.itemID, 101)
+        XCTAssertEqual(viewModel.sessionStats, SessionStats())
+        let updates = await dataService.sessionStatsUpdates()
+        XCTAssertNil(updates.last(where: { $0.itemID == 101 }))
+    }
+
     func testSubmitPerceptionGuessMarksCorrectAnswer() async throws {
         let dataService = MockTrainingDataService()
         let audioService = MockTrainingAudioService(randomTestIndex: 0)

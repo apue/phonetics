@@ -161,10 +161,16 @@ final class TrainingCardViewModel {
             return
         }
 
+        let playbackCard = currentCard
+
         let selectedIndex = try await runPlayback(control: .randomTest) {
             try await self.audioService.playRandomTest(
-                options: [currentCard.leftText, currentCard.rightText]
+                options: [playbackCard.leftText, playbackCard.rightText]
             )
+        }
+
+        guard self.currentCard?.id == playbackCard.id else {
+            return
         }
 
         pendingAnswer = selectedIndex == 0 ? .left : .right

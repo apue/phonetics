@@ -94,26 +94,11 @@ actor DataService {
             }
 
             let groupedSentences = sentences.filter { $0.phenomenon == phenomenon }
-            guard groupedSentences.count >= 2 else {
-                return []
-            }
-
-            return groupedSentences.enumerated().map { index, sentence in
-                let comparison = groupedSentences[(index + 1) % groupedSentences.count]
-                return TrainingCardItem(
-                    kind: .sentence(phenomenon: phenomenon),
-                    itemType: "sentence",
-                    itemID: sentence.id ?? 0,
-                    targetID: targetID,
-                    title: sentenceDisplayTitle(for: phenomenon),
-                    subtitle: sentence.text,
-                    leftText: sentence.text,
-                    leftIPA: sentence.ipa,
-                    rightText: comparison.text,
-                    rightIPA: comparison.ipa,
-                    tierLabel: "Sentence"
-                )
-            }
+            return buildSentenceTrainingCards(
+                targetID: targetID,
+                phenomenon: phenomenon,
+                sentences: groupedSentences
+            )
         }
     }
 
@@ -714,6 +699,41 @@ actor DataService {
             "Intonation"
         default:
             phenomenon.capitalized
+        }
+    }
+
+    func buildSentenceTrainingCards(
+        targetID: String,
+        phenomenon: String,
+        sentences: [Sentence]
+    ) -> [TrainingCardItem] {
+        let sentencesWithIDs = sentences.compactMap { sentence -> (sentence: Sentence, id: Int64)? in
+            guard let id = sentence.id else {
+                return nil
+            }
+
+            return (sentence, id)
+        }
+
+        guard sentencesWithIDs.count >= 2 else {
+            return []
+        }
+
+        return sentencesWithIDs.enumerated().map { index, entry in
+            let comparison = sentencesWithIDs[(index + 1) % sentencesWithIDs.count]
+            return TrainingCardItem(
+                kind: .sentence(phenomenon: phenomenon),
+                itemType: "sentence",
+                itemID: entry.id,
+                targetID: targetID,
+                title: sentenceDisplayTitle(for: phenomenon),
+                subtitle: entry.sentence.text,
+                leftText: entry.sentence.text,
+                leftIPA: entry.sentence.ipa,
+                rightText: comparison.sentence.text,
+                rightIPA: comparison.sentence.ipa,
+                tierLabel: "Sentence"
+            )
         }
     }
 

@@ -80,6 +80,28 @@ final class DataServiceTests: XCTestCase {
         XCTAssertEqual(cards.first?.rightText, "Turn it on.")
     }
 
+    func testBuildSentenceTrainingCardsSkipsSentencesWithoutIDs() async throws {
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = DataService(appSupportURL: appSupportURL)
+        let sentences = [
+            Sentence(id: nil, text: "Ignore me.", ipa: "/ɪɡˈnɔːr mi/", phenomenon: "linking", notes: nil, tier: .sentence),
+            Sentence(id: 11, text: "Pick it up.", ipa: "/pɪk‿ɪt‿ʌp/", phenomenon: "linking", notes: nil, tier: .sentence),
+            Sentence(id: 12, text: "Turn it on.", ipa: "/tɜːn‿ɪt‿ɒn/", phenomenon: "linking", notes: nil, tier: .sentence)
+        ]
+
+        let cards = await service.buildSentenceTrainingCards(
+            targetID: "sentence:linking",
+            phenomenon: "linking",
+            sentences: sentences
+        )
+
+        XCTAssertEqual(cards.count, 2)
+        XCTAssertEqual(cards.map(\.itemID), [11, 12])
+        XCTAssertTrue(cards.allSatisfy { $0.itemID > 0 })
+    }
+
     func testUpdatePairTagStatePersistsSavedAndHardFlags() async throws {
         let appSupportURL = makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: appSupportURL) }
