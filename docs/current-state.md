@@ -39,6 +39,8 @@ swift run phoneticsctl --gui
 swift run phoneticsctl --headless seed-check
 swift run phoneticsctl --headless db-summary
 swift run phoneticsctl --headless smoke-test
+swift run phoneticsctl --headless ui-screenshots
+swift run phoneticsctl --headless ui-readout
 ```
 
 Recommended uses:
@@ -84,10 +86,17 @@ Important implication:
 - sidebar navigation for `Begin`, `History`, and `Settings`
 - collapsible sidebar
 - toolbar sidebar toggle with `⌘+\`
+- training sidebar summary cards for current target and current session
+- first-run onboarding remains an overlay above the training workspace
 
 ### Training
 
-- minimal-pair card with text and IPA for left/right targets
+- header target selector with grouped targets:
+  - `Sound Contrasts`
+  - `Linking / Reduction`
+  - `Stress / Intonation`
+- selector supports pair-backed and sentence-backed training targets in one entry point
+- target cards with text and optional IPA for left/right targets
 - target cards are clickable and play standard pronunciation
 - perception flow:
   - `Random Test`
@@ -99,19 +108,20 @@ Important implication:
   - standard playback
   - user-recording playback
   - ABAB loop playback
+  - playback speed controls: `0.75x`, `1.0x`, `1.25x`
   - shared `Stop` control
   - interruptible playback between all Training audio actions
 - tagging:
-  - `Save`
-  - `Hard`
-- per-card session stats:
+  - `★ Save`
+  - `! Hard`
+- bottom stats strip:
   - `LISTENS`
   - `CORRECT`
   - `PRACTICES`
   - `TIME`
 - navigation:
-  - previous card
-  - next card
+  - previous card within the selected target
+  - next card within the selected target
   - reload
 - shortcuts:
   - `←` / `→`
@@ -152,6 +162,8 @@ Headless commands currently validate:
 - at least one training pair can load
 - settings query path
 - history query path
+- deterministic onboarding/training screenshot rendering
+- OCR-style screenshot readout for structural UI verification
 
 Headless commands do **not** currently validate:
 

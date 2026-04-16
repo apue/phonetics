@@ -3,4 +3,5 @@ public enum HeadlessAcceptanceCommand: String, Equatable, Sendable {
     case dbSummary = "db-summary"
     case smokeTest = "smoke-test"
     case uiScreenshots = "ui-screenshots"
+    case uiReadout = "ui-readout"
 }

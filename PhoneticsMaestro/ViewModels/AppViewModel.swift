@@ -44,8 +44,9 @@ public final class AppViewModel {
             let settings = try await settingsService.fetchSettings()
             shouldShowOnboarding = !settings.hasDismissedOnboarding
             selectedScreen = .training
+            trainingCardViewModel.applySettings(settings)
             isInitialized = true
-            await trainingCardViewModel.loadInitialPair()
+            await trainingCardViewModel.loadInitialState()
         } catch {
             errorMessage = error.localizedDescription
         }

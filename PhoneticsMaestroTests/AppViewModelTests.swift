@@ -6,6 +6,7 @@ import XCTest
 final class AppViewModelTests: XCTestCase {
     func testAppScreenCasesExcludeWelcome() {
         XCTAssertEqual(AppScreen.allCases, [.training, .history, .settings])
+        XCTAssertEqual(AppScreen.training.title, "Begin")
     }
 
     func testToggleSidebarUpdatesCollapsedState() {

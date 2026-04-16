@@ -55,6 +55,112 @@ actor DataService {
         }
     }
 
+    func fetchTrainingTargets() throws -> [TrainingTargetSummary] {
+        try withDatabase { db in
+            let pairs = try fetchAllPairs(in: db)
+            let sentences = try fetchAllSentences(in: db)
+
+            return buildTrainingTargets(pairs: pairs, sentences: sentences)
+        }
+    }
+
+    func fetchTrainingCards(forTargetID targetID: String) throws -> [TrainingCardItem] {
+        try withDatabase { db in
+            let pairs = try fetchAllPairs(in: db)
+            let sentences = try fetchAllSentences(in: db)
+
+            if let contrast = pairContrast(from: targetID) {
+                return pairs
+                    .filter { $0.phonemeContrast == contrast }
+                    .map { pair in
+                        TrainingCardItem(
+                            kind: .pair,
+                            itemType: "pair",
+                            itemID: pair.id,
+                            targetID: targetID,
+                            title: pair.tier == .phoneme ? "Phoneme Contrast" : "Word Contrast",
+                            subtitle: "\(pair.leftText) / \(pair.rightText)",
+                            leftText: pair.leftText,
+                            leftIPA: pair.leftIPA,
+                            rightText: pair.rightText,
+                            rightIPA: pair.rightIPA,
+                            tierLabel: tierLabel(for: pair.tier)
+                        )
+                    }
+            }
+
+            guard let phenomenon = sentencePhenomenon(from: targetID) else {
+                return []
+            }
+
+            let groupedSentences = sentences.filter { $0.phenomenon == phenomenon }
+            guard groupedSentences.count >= 2 else {
+                return []
+            }
+
+            return groupedSentences.enumerated().map { index, sentence in
+                let comparison = groupedSentences[(index + 1) % groupedSentences.count]
+                return TrainingCardItem(
+                    kind: .sentence(phenomenon: phenomenon),
+                    itemType: "sentence",
+                    itemID: sentence.id ?? 0,
+                    targetID: targetID,
+                    title: sentenceDisplayTitle(for: phenomenon),
+                    subtitle: sentence.text,
+                    leftText: sentence.text,
+                    leftIPA: sentence.ipa,
+                    rightText: comparison.text,
+                    rightIPA: comparison.ipa,
+                    tierLabel: "Sentence"
+                )
+            }
+        }
+    }
+
+    func fetchTagState(itemType: String, itemID: Int64) throws -> TrainingTagState {
+        try withDatabase { db in
+            let row = try Row.fetchOne(
+                db,
+                sql: """
+                SELECT is_saved, is_hard
+                FROM user_progress
+                WHERE item_type = ? AND item_id = ?
+                ORDER BY updated_at DESC, id DESC
+                LIMIT 1
+                """,
+                arguments: [itemType, itemID]
+            )
+
+            return TrainingTagState(
+                isSaved: row?["is_saved"] ?? false,
+                isHard: row?["is_hard"] ?? false
+            )
+        }
+    }
+
+    func fetchSessionStats(itemType: String, itemID: Int64, sessionDate: String) throws -> SessionStats {
+        try withDatabase { db in
+            let row = try Row.fetchOne(
+                db,
+                sql: """
+                SELECT listen_count, correct_count, practice_count, time_spent_sec
+                FROM user_progress
+                WHERE item_type = ? AND item_id = ? AND session_date = ?
+                ORDER BY updated_at DESC, id DESC
+                LIMIT 1
+                """,
+                arguments: [itemType, itemID, sessionDate]
+            )
+
+            return SessionStats(
+                listens: row?["listen_count"] ?? 0,
+                correct: row?["correct_count"] ?? 0,
+                practices: row?["practice_count"] ?? 0,
+                elapsedSeconds: row?["time_spent_sec"] ?? 0
+            )
+        }
+    }
+
     func fetchNextPair(afterID: Int64? = nil) throws -> PhonePair? {
         try withDatabase { db in
             if let afterID, let nextPair = try fetchPair(afterID: afterID, in: db) {
@@ -76,47 +182,11 @@ actor DataService {
     }
 
     func fetchPairTagState(for itemID: Int64) throws -> TrainingTagState {
-        try withDatabase { db in
-            let row = try Row.fetchOne(
-                db,
-                sql: """
-                SELECT is_saved, is_hard
-                FROM user_progress
-                WHERE item_type = 'pair' AND item_id = ?
-                ORDER BY updated_at DESC, id DESC
-                LIMIT 1
-                """,
-                arguments: [itemID]
-            )
-
-            return TrainingTagState(
-                isSaved: row?["is_saved"] ?? false,
-                isHard: row?["is_hard"] ?? false
-            )
-        }
+        try fetchTagState(itemType: "pair", itemID: itemID)
     }
 
     func fetchPairSessionStats(for itemID: Int64, sessionDate: String) throws -> SessionStats {
-        try withDatabase { db in
-            let row = try Row.fetchOne(
-                db,
-                sql: """
-                SELECT listen_count, correct_count, practice_count, time_spent_sec
-                FROM user_progress
-                WHERE item_type = 'pair' AND item_id = ? AND session_date = ?
-                ORDER BY updated_at DESC, id DESC
-                LIMIT 1
-                """,
-                arguments: [itemID, sessionDate]
-            )
-
-            return SessionStats(
-                listens: row?["listen_count"] ?? 0,
-                correct: row?["correct_count"] ?? 0,
-                practices: row?["practice_count"] ?? 0,
-                elapsedSeconds: row?["time_spent_sec"] ?? 0
-            )
-        }
+        try fetchSessionStats(itemType: "pair", itemID: itemID, sessionDate: sessionDate)
     }
 
     func fetchHistorySessionSummaries() throws -> [HistorySessionSummary] {
@@ -195,17 +265,33 @@ actor DataService {
         isSaved: Bool,
         isHard: Bool
     ) throws {
+        try updateTagState(
+            itemType: "pair",
+            itemID: itemID,
+            sessionDate: sessionDate,
+            isSaved: isSaved,
+            isHard: isHard
+        )
+    }
+
+    func updateTagState(
+        itemType: String,
+        itemID: Int64,
+        sessionDate: String,
+        isSaved: Bool,
+        isHard: Bool
+    ) throws {
         try withDatabaseWrite { db in
             if let progressID = try Int64.fetchOne(
                 db,
                 sql: """
                 SELECT id
                 FROM user_progress
-                WHERE item_type = 'pair' AND item_id = ? AND session_date = ?
+                WHERE item_type = ? AND item_id = ? AND session_date = ?
                 ORDER BY id DESC
                 LIMIT 1
                 """,
-                arguments: [itemID, sessionDate]
+                arguments: [itemType, itemID, sessionDate]
             ) {
                 try db.execute(
                     sql: """
@@ -224,9 +310,9 @@ actor DataService {
                         session_date,
                         is_saved,
                         is_hard
-                    ) VALUES ('pair', ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?)
                     """,
-                    arguments: [itemID, sessionDate, isSaved, isHard]
+                    arguments: [itemType, itemID, sessionDate, isSaved, isHard]
                 )
             }
         }
@@ -239,8 +325,31 @@ actor DataService {
         isSaved: Bool,
         isHard: Bool
     ) throws {
+        try updateSessionStats(
+            itemType: "pair",
+            itemID: itemID,
+            sessionDate: sessionDate,
+            stats: stats,
+            isSaved: isSaved,
+            isHard: isHard
+        )
+    }
+
+    func updateSessionStats(
+        itemType: String,
+        itemID: Int64,
+        sessionDate: String,
+        stats: SessionStats,
+        isSaved: Bool,
+        isHard: Bool
+    ) throws {
         try withDatabaseWrite { db in
-            if let progressID = try latestPairProgressID(for: itemID, sessionDate: sessionDate, in: db) {
+            if let progressID = try latestProgressID(
+                itemType: itemType,
+                for: itemID,
+                sessionDate: sessionDate,
+                in: db
+            ) {
                 try db.execute(
                     sql: """
                     UPDATE user_progress
@@ -277,9 +386,10 @@ actor DataService {
                         time_spent_sec,
                         is_saved,
                         is_hard
-                    ) VALUES ('pair', ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     arguments: [
+                        itemType,
                         itemID,
                         sessionDate,
                         stats.listens,
@@ -459,7 +569,8 @@ actor DataService {
         }
     }
 
-    private func latestPairProgressID(
+    private func latestProgressID(
+        itemType: String,
         for itemID: Int64,
         sessionDate: String,
         in db: Database
@@ -469,12 +580,152 @@ actor DataService {
             sql: """
             SELECT id
             FROM user_progress
-            WHERE item_type = 'pair' AND item_id = ? AND session_date = ?
+            WHERE item_type = ? AND item_id = ? AND session_date = ?
             ORDER BY id DESC
             LIMIT 1
             """,
-            arguments: [itemID, sessionDate]
+            arguments: [itemType, itemID, sessionDate]
         )
+    }
+
+    private func fetchAllPairs(in db: Database) throws -> [PhonePair] {
+        try PhonePair.fetchAll(
+            db,
+            sql: """
+            SELECT
+              pairs.id,
+              pairs.phoneme_contrast AS phonemeContrast,
+              pairs.tier,
+              pairs.difficulty,
+              wordA.text AS leftText,
+              wordA.ipa AS leftIPA,
+              wordB.text AS rightText,
+              wordB.ipa AS rightIPA
+            FROM pairs
+            JOIN words AS wordA ON wordA.id = pairs.word_a_id
+            JOIN words AS wordB ON wordB.id = pairs.word_b_id
+            ORDER BY pairs.id
+            """
+        )
+    }
+
+    private func fetchAllSentences(in db: Database) throws -> [Sentence] {
+        try Sentence.fetchAll(
+            db,
+            sql: """
+            SELECT
+              id,
+              text,
+              ipa,
+              phenomenon,
+              notes,
+              tier
+            FROM sentences
+            ORDER BY id
+            """
+        )
+    }
+
+    private func buildTrainingTargets(
+        pairs: [PhonePair],
+        sentences: [Sentence]
+    ) -> [TrainingTargetSummary] {
+        let pairTargets = Dictionary(grouping: pairs, by: \.phonemeContrast)
+            .sorted { lhs, rhs in
+                (lhs.value.first?.id ?? 0) < (rhs.value.first?.id ?? 0)
+            }
+            .compactMap { entry -> TrainingTargetSummary? in
+                let contrast = entry.key
+                let items = entry.value
+                guard let first = items.first else {
+                    return nil
+                }
+
+                return TrainingTargetSummary(
+                    id: "pair:\(contrast)",
+                    group: .soundContrasts,
+                    title: contrast,
+                    subtitle: "\(first.leftText) / \(first.rightText)",
+                    currentItemType: "pair"
+                )
+            }
+
+        let sentenceTargets = Dictionary(grouping: sentences, by: \.phenomenon)
+            .sorted { lhs, rhs in
+                (lhs.value.first?.id ?? 0) < (rhs.value.first?.id ?? 0)
+            }
+            .compactMap { entry -> TrainingTargetSummary? in
+                let phenomenon = entry.key
+                let items = entry.value
+                guard let first = items.first else {
+                    return nil
+                }
+
+                return TrainingTargetSummary(
+                    id: "sentence:\(phenomenon)",
+                    group: sentenceGroup(for: phenomenon),
+                    title: sentenceDisplayTitle(for: phenomenon),
+                    subtitle: first.text,
+                    currentItemType: "sentence"
+                )
+            }
+
+        return pairTargets + sentenceTargets
+    }
+
+    private func pairContrast(from targetID: String) -> String? {
+        guard targetID.hasPrefix("pair:") else {
+            return nil
+        }
+
+        return String(targetID.dropFirst("pair:".count))
+    }
+
+    private func sentencePhenomenon(from targetID: String) -> String? {
+        guard targetID.hasPrefix("sentence:") else {
+            return nil
+        }
+
+        return String(targetID.dropFirst("sentence:".count))
+    }
+
+    private func sentenceGroup(for phenomenon: String) -> TrainingTargetGroup {
+        switch phenomenon {
+        case "stress", "intonation":
+            .stressIntonation
+        case "linking", "reduction", "elision":
+            .linkingReduction
+        default:
+            .linkingReduction
+        }
+    }
+
+    private func sentenceDisplayTitle(for phenomenon: String) -> String {
+        switch phenomenon {
+        case "linking":
+            "Linking"
+        case "reduction":
+            "Reduction"
+        case "elision":
+            "Elision"
+        case "stress":
+            "Stress"
+        case "intonation":
+            "Intonation"
+        default:
+            phenomenon.capitalized
+        }
+    }
+
+    private func tierLabel(for tier: TrainingTier) -> String {
+        switch tier {
+        case .phoneme:
+            "Phoneme"
+        case .word:
+            "Word"
+        case .sentence:
+            "Sentence"
+        }
     }
 
     private func fetchPair(afterID: Int64, in db: Database) throws -> PhonePair? {

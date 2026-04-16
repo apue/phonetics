@@ -4,20 +4,21 @@ struct TrainingCardView: View {
     @Bindable var viewModel: TrainingCardViewModel
     @State private var isRecordButtonPulsing = false
     @State private var isFeedbackHighlighted = false
+    @State private var isTargetSelectorPresented = false
     @State private var feedbackResetTask: Task<Void, Never>?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             headerSection
 
-            if let pair = viewModel.currentPair {
-                contentBody(pair: pair)
+            if let card = viewModel.currentCard {
+                contentBody(card: card)
                 footerSection
             } else {
                 ContentUnavailableView(
-                    "No Pair Loaded",
+                    "No Training Card Loaded",
                     systemImage: "waveform.badge.magnifyingglass",
-                    description: Text("Initialize the local database to load the first minimal pair.")
+                    description: Text("Initialize the local database to load a training target.")
                 )
             }
         }
@@ -54,74 +55,105 @@ struct TrainingCardView: View {
     }
 
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Training Card")
-                .font(.title)
-                .fontWeight(.semibold)
-
-            if let pair = viewModel.currentPair {
-                Text("Contrast \(pair.phonemeContrast) • Tier \(pair.tier.rawValue)")
+        HStack(alignment: .top, spacing: 24) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("TRAINING CARD")
+                    .font(.caption.weight(.bold))
                     .foregroundStyle(.secondary)
 
+                Text(headerTitle)
+                    .font(.system(size: 34, weight: .bold))
+
+                Text(headerDescription)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+
+                if let currentTarget = viewModel.currentTarget {
+                    Text("\(currentTarget.title) • \(currentTarget.group.sectionTitle)")
+                        .font(.callout.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 12) {
+                targetSelectorMenu
                 taggingSection
-            } else {
-                Text("Load the next pair to continue the current session.")
-                    .foregroundStyle(.secondary)
             }
         }
     }
 
     @ViewBuilder
-    private func contentBody(pair: PhonePair) -> some View {
+    private func contentBody(card: TrainingCardItem) -> some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 24) {
-                targetCard(label: "A", title: pair.leftText, ipa: pair.leftIPA, option: .left)
-                targetCard(label: "B", title: pair.rightText, ipa: pair.rightIPA, option: .right)
+                targetCard(
+                    roleLabel: viewModel.selectedPracticeTarget == .left ? "SELECTED TARGET" : "LEFT TARGET",
+                    title: card.leftText,
+                    ipa: card.leftIPA,
+                    option: .left
+                )
+                targetCard(
+                    roleLabel: viewModel.selectedPracticeTarget == .right ? "SELECTED TARGET" : "RIGHT TARGET",
+                    title: card.rightText,
+                    ipa: card.rightIPA,
+                    option: .right
+                )
             }
 
             HStack(alignment: .top, spacing: 20) {
-                perceptionSection(pair: pair)
-                practiceSection(pair: pair)
+                perceptionSection(card: card)
+                practiceSection(card: card)
             }
         }
     }
 
     private var footerSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                Button("Previous Card") {
-                    Task {
-                        await viewModel.loadPreviousPair()
-                    }
-                }
-                .buttonStyle(.bordered)
-                .keyboardShortcut(.leftArrow, modifiers: [])
+        HStack(spacing: 20) {
+            statStrip
+            Spacer(minLength: 0)
+            navigationControls
+        }
+    }
 
-                Button("Next Card") {
-                    Task {
-                        await viewModel.loadNextPair()
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .keyboardShortcut(.rightArrow, modifiers: [])
+    private var targetSelectorMenu: some View {
+        Button("Target: \(viewModel.currentTarget?.title ?? "Select")") {
+            isTargetSelectorPresented = true
+        }
+        .buttonStyle(.borderedProminent)
+        .popover(isPresented: $isTargetSelectorPresented, arrowEdge: .bottom) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Switch What You're Training")
+                    .font(.headline)
 
-                Button("Reload") {
-                    Task {
-                        await viewModel.loadInitialPair()
+                Text("Grouped by type, but every row is still a concrete target.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                ForEach(TrainingTargetGroup.allCases) { group in
+                    let groupTargets = viewModel.targets.filter { $0.group == group }
+                    if !groupTargets.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(group.sectionTitle)
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(.secondary)
+
+                            ForEach(groupTargets) { target in
+                                targetSelectorRow(target)
+                            }
+                        }
                     }
                 }
-                .buttonStyle(.bordered)
             }
-
-            Text("Click either target card to hear its pronunciation. The selected target is used by Standard and A/B playback.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            .padding(20)
+            .frame(width: 360)
         }
     }
 
     private var taggingSection: some View {
         HStack(spacing: 12) {
-            Button(viewModel.isSaved ? "★ Saved" : "☆ Save") {
+            Button("★ Save") {
                 Task {
                     do {
                         try await viewModel.toggleSaved()
@@ -133,7 +165,7 @@ struct TrainingCardView: View {
             .buttonStyle(.bordered)
             .tint(viewModel.isSaved ? .yellow : .secondary)
 
-            Button(viewModel.isHard ? "! Hard" : "Mark Hard") {
+            Button("! Hard") {
                 Task {
                     do {
                         try await viewModel.toggleHard()
@@ -147,41 +179,65 @@ struct TrainingCardView: View {
         }
     }
 
-    private func targetCard(label: String, title: String, ipa: String, option: PairOption) -> some View {
+    private func targetCard(
+        roleLabel: String,
+        title: String,
+        ipa: String?,
+        option: PairOption
+    ) -> some View {
         Button {
             Task {
                 await viewModel.tapTargetCard(option)
             }
         } label: {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(label)
-                    .font(.headline.monospaced())
-                    .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(roleLabel)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(viewModel.selectedPracticeTarget == option ? .blue : .secondary)
+                    Spacer()
+                    if viewModel.selectedPracticeTarget == option {
+                        Image(systemName: "play.fill")
+                            .foregroundStyle(.white)
+                            .padding(10)
+                            .background(Circle().fill(Color.accentColor))
+                    }
+                }
 
                 Text(title)
-                    .font(.system(size: 34, weight: .semibold))
+                    .font(.system(size: 34, weight: .bold))
+                    .foregroundStyle(.primary)
 
-                Text(ipa)
-                    .font(.title3.monospaced())
-                    .foregroundStyle(.secondary)
+                if let ipa, !ipa.isEmpty {
+                    Text("\(ipa) • \(option.rawValue.uppercased())")
+                        .font(.title3.monospaced())
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(option.rawValue.uppercased())
+                        .font(.title3.monospaced())
+                        .foregroundStyle(.secondary)
+                }
             }
-            .frame(maxWidth: 260, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 140, alignment: .leading)
             .padding(24)
-            .background(targetBackground(for: option), in: RoundedRectangle(cornerRadius: 16))
+            .background(targetBackground(for: option), in: RoundedRectangle(cornerRadius: 24))
         }
         .buttonStyle(.plain)
         .disabled(viewModel.isRecording)
     }
 
     @ViewBuilder
-    private func perceptionSection(pair: PhonePair) -> some View {
+    private func perceptionSection(card: TrainingCardItem) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Perception")
                 .font(.title3)
                 .fontWeight(.semibold)
 
+            Text("Run a blind test, then decide whether you heard A or B.")
+                .foregroundStyle(.secondary)
+
             HStack(spacing: 12) {
-                Button("Random Test") {
+                Button("▶ Random Test") {
                     Task {
                         do {
                             try await viewModel.playRandomTest()
@@ -194,7 +250,7 @@ struct TrainingCardView: View {
                 .keyboardShortcut(.space, modifiers: [])
                 .disabled(viewModel.isRecording)
 
-                Button(pair.leftText) {
+                Button(card.leftText) {
                     Task {
                         await viewModel.submitPerceptionGuess(.left)
                     }
@@ -202,7 +258,7 @@ struct TrainingCardView: View {
                 .buttonStyle(.bordered)
                 .disabled(viewModel.perceptionState != .awaitingAnswer)
 
-                Button(pair.rightText) {
+                Button(card.rightText) {
                     Task {
                         await viewModel.submitPerceptionGuess(.right)
                     }
@@ -218,25 +274,30 @@ struct TrainingCardView: View {
                 .background(feedbackBackground, in: RoundedRectangle(cornerRadius: 12))
                 .scaleEffect(isFeedbackHighlighted ? 1.02 : 1.0)
                 .animation(.easeOut(duration: 0.25), value: isFeedbackHighlighted)
-
-            HStack(spacing: 20) {
-                statValue("LISTENS", value: "\(viewModel.sessionStats.listens)")
-                statValue("CORRECT", value: correctStatText)
-            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 24))
     }
 
     @ViewBuilder
-    private func practiceSection(pair: PhonePair) -> some View {
+    private func practiceSection(card: TrainingCardItem) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Practice")
                 .font(.title3)
                 .fontWeight(.semibold)
 
-            Text("Selected target: \(selectedTargetLabel(for: pair))")
+            Text("Selected target: \(selectedTargetLabel(for: card))")
                 .foregroundStyle(.secondary)
+
+            HStack(spacing: 8) {
+                Text("Speed")
+                    .foregroundStyle(.secondary)
+
+                speedChip("0.75x", rate: 0.75)
+                speedChip("1.0x", rate: 1.0)
+                speedChip("1.25x", rate: 1.25)
+            }
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 12) {
@@ -250,7 +311,7 @@ struct TrainingCardView: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(viewModel.isRecording ? .red : .accentColor)
+                    .tint(viewModel.isRecording ? .red : .primary)
                     .overlay {
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(Color.red.opacity(viewModel.isRecording ? 0.45 : 0.0), lineWidth: 2)
@@ -297,15 +358,6 @@ struct TrainingCardView: View {
                     .buttonStyle(.bordered)
                     .disabled(viewModel.isRecording || viewModel.sessionStats.practices == 0)
 
-                    Button("Stop") {
-                        Task {
-                            await viewModel.stopPlayback()
-                        }
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(!viewModel.isPlaybackActive)
-                    .keyboardShortcut(.escape, modifiers: [])
-
                     Button(viewModel.isABABLooping ? "Stop A/B" : "A/B") {
                         Task {
                             do {
@@ -317,6 +369,15 @@ struct TrainingCardView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(viewModel.isRecording || viewModel.sessionStats.practices == 0)
+
+                    Button("Stop") {
+                        Task {
+                            await viewModel.stopPlayback()
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!viewModel.isPlaybackActive)
+                    .keyboardShortcut(.escape, modifiers: [])
                 }
 
                 Text(Self.practiceHintText(
@@ -328,15 +389,118 @@ struct TrainingCardView: View {
                 .font(.footnote)
                 .foregroundStyle(viewModel.isRecording ? .red : .secondary)
             }
-
-            HStack(spacing: 20) {
-                statValue("PRACTICES", value: "\(viewModel.sessionStats.practices)")
-                statValue("TIME", value: elapsedTimeText)
-                statValue("TARGET", value: viewModel.selectedPracticeTarget.rawValue.uppercased())
-            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 24))
+    }
+
+    private var statStrip: some View {
+        HStack(spacing: 28) {
+            statValue("LISTENS", value: "\(viewModel.sessionStats.listens)")
+            statValue("CORRECT", value: correctStatText)
+            statValue("PRACTICES", value: "\(viewModel.sessionStats.practices)")
+            statValue("TIME", value: elapsedTimeText)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 24))
+    }
+
+    private func speedChip(_ title: String, rate: Float) -> some View {
+        Button(title) {
+            viewModel.playbackRate = rate
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            Capsule(style: .continuous)
+                .fill(viewModel.playbackRate == rate ? Color.accentColor : Color.secondary.opacity(0.12))
+        )
+        .foregroundStyle(viewModel.playbackRate == rate ? .white : .primary)
+    }
+
+    private func targetSelectorRow(_ target: TrainingTargetSummary) -> some View {
+        let isCurrent = target.id == viewModel.selectedTargetID
+
+        return Button {
+            isTargetSelectorPresented = false
+            Task {
+                await viewModel.selectTarget(id: target.id)
+            }
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(target.title)
+                        .font(.body.weight(.semibold))
+                    Text(target.subtitle)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if isCurrent {
+                    Text("Current")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isCurrent ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var navigationControls: some View {
+        HStack(spacing: 12) {
+            Button("← Prev") {
+                Task {
+                    await viewModel.loadPreviousPair()
+                }
+            }
+            .buttonStyle(.bordered)
+            .keyboardShortcut(.leftArrow, modifiers: [])
+
+            Button("Reload") {
+                Task {
+                    await viewModel.reloadCurrentTarget()
+                }
+            }
+            .buttonStyle(.bordered)
+
+            Button("Next") {
+                Task {
+                    await viewModel.loadNextPair()
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.rightArrow, modifiers: [])
+        }
+    }
+
+    private var headerTitle: String {
+        viewModel.currentCard?.title ?? "Training"
+    }
+
+    private var headerDescription: String {
+        guard let currentTarget else {
+            return "Switch what you're training without leaving the main practice workspace."
+        }
+
+        switch currentTarget.currentItemType {
+        case "sentence":
+            return "Train connected speech and prosody by listening first, then comparing your own recording."
+        default:
+            return "Train the contrast between the selected A/B targets by listening first, then comparing your own recording."
+        }
+    }
+
+    private var currentTarget: TrainingTargetSummary? {
+        viewModel.currentTarget
     }
 
     private var feedbackText: String {
@@ -374,21 +538,12 @@ struct TrainingCardView: View {
         }
     }
 
-    private var practiceFeedbackText: String {
-        Self.practiceHintText(
-            isRecording: viewModel.isRecording,
-            isABABLooping: viewModel.isABABLooping,
-            isPlaybackActive: viewModel.isPlaybackActive,
-            practices: viewModel.sessionStats.practices
-        )
-    }
-
-    private func selectedTargetLabel(for pair: PhonePair) -> String {
+    private func selectedTargetLabel(for card: TrainingCardItem) -> String {
         switch viewModel.selectedPracticeTarget {
         case .left:
-            return "A • \(pair.leftText)"
+            return "A • \(card.leftText)"
         case .right:
-            return "B • \(pair.rightText)"
+            return "B • \(card.rightText)"
         }
     }
 
@@ -437,10 +592,10 @@ struct TrainingCardView: View {
         }
 
         if viewModel.selectedPracticeTarget == option {
-            return Color.accentColor.opacity(0.2)
+            return Color.blue.opacity(0.16)
         }
 
-        return Color.secondary.opacity(0.12)
+        return Color.secondary.opacity(0.1)
     }
 
     private func statValue(_ title: String, value: String) -> some View {

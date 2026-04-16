@@ -78,6 +78,20 @@ final class HeadlessAcceptanceRunnerTests: XCTestCase {
         XCTAssertTrue(result.output.contains("training_png="))
     }
 
+    func testUIReadoutCommandProducesStableOutputFields() async throws {
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let runner = HeadlessAcceptanceRunner(appSupportURL: appSupportURL)
+        let result = await runner.run(.uiReadout)
+
+        XCTAssertEqual(result.exitCode, 0)
+        XCTAssertTrue(result.output.contains("status=ok"))
+        XCTAssertTrue(result.output.contains("command=ui-readout"))
+        XCTAssertTrue(result.output.contains("onboarding_text="))
+        XCTAssertTrue(result.output.contains("training_text="))
+    }
+
     private func value(for key: String, in output: String) throws -> Int {
         let line = try XCTUnwrap(
             output

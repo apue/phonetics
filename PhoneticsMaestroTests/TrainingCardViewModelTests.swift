@@ -156,6 +156,47 @@ final class TrainingCardViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.isABABLooping)
     }
 
+    func testSelectingTargetResetsToFirstCardOfThatTarget() async {
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService
+        )
+
+        await viewModel.loadInitialPair()
+        await viewModel.loadNextPair()
+        await viewModel.selectTarget(id: "sentence:linking")
+
+        XCTAssertEqual(viewModel.currentCard?.targetID, "sentence:linking")
+        XCTAssertEqual(viewModel.currentCardIndex, 0)
+        XCTAssertEqual(viewModel.currentCard?.leftText, "Pick it up.")
+    }
+
+    func testPracticePlaybackUsesSelectedRate() async throws {
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService
+        )
+
+        await viewModel.loadInitialPair()
+        viewModel.playbackRate = 1.25
+        try await viewModel.playSelectedStandard()
+        try await viewModel.toggleRecording()
+        try await viewModel.toggleRecording()
+        try await viewModel.playUserRecording()
+        try await viewModel.toggleABABLoop()
+
+        let standardRates = await audioService.standardPlaybackRates()
+        let userRates = await audioService.userPlaybackRates()
+        let ababRates = await audioService.ababLoopRates()
+        XCTAssertEqual(standardRates, [1.25])
+        XCTAssertEqual(userRates, [1.25])
+        XCTAssertEqual(ababRates, [1.25])
+    }
+
     func testTapTargetCardSelectsTargetAndPlaysStandard() async {
         let dataService = MockTrainingDataService()
         let audioService = MockTrainingAudioService(randomTestIndex: 0)
@@ -519,6 +560,79 @@ actor MockTrainingDataService: TrainingDataServing {
         self.updateError = updateError
     }
 
+    func fetchTrainingTargets() async throws -> [TrainingTargetSummary] {
+        [
+            TrainingTargetSummary(
+                id: "pair:ʌ-æ",
+                group: .soundContrasts,
+                title: "ʌ-æ",
+                subtitle: "but / bat",
+                currentItemType: "pair"
+            ),
+            TrainingTargetSummary(
+                id: "sentence:linking",
+                group: .linkingReduction,
+                title: "Linking",
+                subtitle: "Pick it up.",
+                currentItemType: "sentence"
+            )
+        ]
+    }
+
+    func fetchTrainingCards(forTargetID targetID: String) async throws -> [TrainingCardItem] {
+        switch targetID {
+        case "sentence:linking":
+            [sentenceCard]
+        default:
+            [firstCard, secondCard]
+        }
+    }
+
+    func fetchTagState(itemType _: String, itemID _: Int64) async throws -> TrainingTagState {
+        if let latest = updates.last?.state {
+            return latest
+        }
+
+        return tagState
+    }
+
+    func fetchSessionStats(itemType _: String, itemID: Int64, sessionDate _: String) async throws -> SessionStats {
+        if let latest = sessionUpdates.last(where: { $0.itemID == itemID })?.stats {
+            return latest
+        }
+
+        return sessionStatsByItemID[itemID] ?? SessionStats()
+    }
+
+    func updateTagState(
+        itemType _: String,
+        itemID: Int64,
+        sessionDate: String,
+        isSaved: Bool,
+        isHard: Bool
+    ) async throws {
+        if let updateError {
+            throw updateError
+        }
+
+        updates.append((itemID, sessionDate, TrainingTagState(isSaved: isSaved, isHard: isHard)))
+    }
+
+    func updateSessionStats(
+        itemType _: String,
+        itemID: Int64,
+        sessionDate: String,
+        stats: SessionStats,
+        isSaved: Bool,
+        isHard: Bool
+    ) async throws {
+        if let updateError {
+            throw updateError
+        }
+
+        sessionUpdates.append((itemID, sessionDate, stats, isSaved, isHard))
+    }
+
     func fetchNextPair(afterID: Int64?) async throws -> PhonePair? {
         switch afterID {
         case 1:
@@ -604,13 +718,61 @@ actor MockTrainingDataService: TrainingDataServing {
     private var secondPair: PhonePair {
         PhonePair(
             id: 2,
-            phonemeContrast: "ɪ-iː",
+            phonemeContrast: "ʌ-æ",
             tier: .word,
             difficulty: 1,
-            leftText: "ship",
-            leftIPA: "/ʃɪp/",
-            rightText: "sheep",
-            rightIPA: "/ʃiːp/"
+            leftText: "cut",
+            leftIPA: "/kʌt/",
+            rightText: "cat",
+            rightIPA: "/kæt/"
+        )
+    }
+
+    private var firstCard: TrainingCardItem {
+        TrainingCardItem(
+            kind: .pair,
+            itemType: "pair",
+            itemID: 1,
+            targetID: "pair:ʌ-æ",
+            title: "Word Contrast",
+            subtitle: "but / bat",
+            leftText: "but",
+            leftIPA: "/bʌt/",
+            rightText: "bat",
+            rightIPA: "/bæt/",
+            tierLabel: "Word"
+        )
+    }
+
+    private var secondCard: TrainingCardItem {
+        TrainingCardItem(
+            kind: .pair,
+            itemType: "pair",
+            itemID: 2,
+            targetID: "pair:ʌ-æ",
+            title: "Word Contrast",
+            subtitle: "cut / cat",
+            leftText: "cut",
+            leftIPA: "/kʌt/",
+            rightText: "cat",
+            rightIPA: "/kæt/",
+            tierLabel: "Word"
+        )
+    }
+
+    private var sentenceCard: TrainingCardItem {
+        TrainingCardItem(
+            kind: .sentence(phenomenon: "linking"),
+            itemType: "sentence",
+            itemID: 101,
+            targetID: "sentence:linking",
+            title: "Linking",
+            subtitle: "Pick it up.",
+            leftText: "Pick it up.",
+            leftIPA: "/pɪk‿ɪt‿ʌp/",
+            rightText: "Turn it on.",
+            rightIPA: "/tɜːn‿ɪt‿ɒn/",
+            tierLabel: "Sentence"
         )
     }
 }
@@ -625,10 +787,13 @@ actor MockTrainingAudioService: TrainingAudioServing {
     private let playbackMode: PlaybackMode
     private var randomRequests: [[String]] = []
     private var standardRequests: [String] = []
+    private var standardRatesStorage: [Float] = []
     private var recordRequests: [(itemType: String, itemID: Int64, attempt: Int, sessionDate: String)] = []
     private var stopRecordingCount = 0
     private var userPlaybackCount = 0
+    private var userRatesStorage: [Float] = []
     private var ababRequests: [String] = []
+    private var ababRatesStorage: [Float] = []
     private var stopCount = 0
     private var audioState: AudioState = .idle
     private var playbackStartCount = 0
@@ -656,8 +821,13 @@ actor MockTrainingAudioService: TrainingAudioServing {
     }
 
     func playStandard(for text: String) async throws {
+        try await playStandard(for: text, rate: 1.0)
+    }
+
+    func playStandard(for text: String, rate: Float) async throws {
         audioState = .playing(source: .standard)
         standardRequests.append(text)
+        standardRatesStorage.append(rate)
         playbackStartCount += 1
         playbackStartedContinuation?.resume()
         playbackStartedContinuation = nil
@@ -683,8 +853,13 @@ actor MockTrainingAudioService: TrainingAudioServing {
     }
 
     func playUserRecording() async throws {
+        try await playUserRecording(rate: 1.0)
+    }
+
+    func playUserRecording(rate: Float) async throws {
         audioState = .playing(source: .userRecording)
         userPlaybackCount += 1
+        userRatesStorage.append(rate)
         playbackStartCount += 1
         playbackStartedContinuation?.resume()
         playbackStartedContinuation = nil
@@ -693,8 +868,13 @@ actor MockTrainingAudioService: TrainingAudioServing {
     }
 
     func startABABLoop(standardText: String) async throws {
+        try await startABABLoop(standardText: standardText, rate: 1.0, silenceNanoseconds: 300_000_000)
+    }
+
+    func startABABLoop(standardText: String, rate: Float, silenceNanoseconds _: UInt64) async throws {
         audioState = .playing(source: .ababLoop)
         ababRequests.append(standardText)
+        ababRatesStorage.append(rate)
         playbackStartCount += 1
         playbackStartedContinuation?.resume()
         playbackStartedContinuation = nil
@@ -715,6 +895,10 @@ actor MockTrainingAudioService: TrainingAudioServing {
         standardRequests
     }
 
+    func standardPlaybackRates() -> [Float] {
+        standardRatesStorage
+    }
+
     func recordStartRequests() -> [(itemType: String, itemID: Int64, attempt: Int, sessionDate: String)] {
         recordRequests
     }
@@ -727,8 +911,16 @@ actor MockTrainingAudioService: TrainingAudioServing {
         userPlaybackCount
     }
 
+    func userPlaybackRates() -> [Float] {
+        userRatesStorage
+    }
+
     func ababLoopRequests() -> [String] {
         ababRequests
+    }
+
+    func ababLoopRates() -> [Float] {
+        ababRatesStorage
     }
 
     func stopCallCount() -> Int {

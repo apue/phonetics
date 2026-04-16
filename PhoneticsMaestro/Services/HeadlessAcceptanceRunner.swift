@@ -43,6 +43,8 @@ public struct HeadlessAcceptanceRunner: Sendable {
             return try await smokeTestOutput(using: service)
         case .uiScreenshots:
             return try await uiScreenshotOutput()
+        case .uiReadout:
+            return try await uiReadoutOutput()
         }
     }
 
@@ -134,6 +136,24 @@ public struct HeadlessAcceptanceRunner: Sendable {
             fields: [
                 "onboarding_png": rendered.onboarding.path,
                 "training_png": rendered.training.path
+            ]
+        )
+    }
+
+    private func uiReadoutOutput() async throws -> String {
+        let baseDirectory = (appSupportURL ?? FileManager.default.temporaryDirectory)
+            .appending(path: "ui-screenshots", directoryHint: .isDirectory)
+
+        let readout = try await MainActor.run {
+            try UIScreenshotReadoutBuilder(outputDirectory: baseDirectory).build()
+        }
+
+        return makeOutput(
+            status: "ok",
+            command: HeadlessAcceptanceCommand.uiReadout.rawValue,
+            fields: [
+                "onboarding_text": readout.onboardingText,
+                "training_text": readout.trainingText
             ]
         )
     }
