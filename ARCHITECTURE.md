@@ -119,11 +119,13 @@ RootView task
 `TrainingCardView` + `TrainingCardViewModel` implement the core loop:
 
 - minimal-pair display with IPA
+- target-card click-to-play pronunciation previews
 - random perception test
 - answer submission with success/error feedback
 - record toggle
-- single-track playback: `Standard`, `Me`
+- shared single-playback controls: target cards, `Random Test`, `Standard`, `Me`
 - `A/B` loop playback
+- shared `Stop` control plus `Esc` stop shortcut
 - `Save` / `Hard` tagging
 - session stats: `LISTENS`, `CORRECT`, `PRACTICES`, `TIME`
 - card navigation and keyboard shortcuts
@@ -181,6 +183,7 @@ Storage location:
 - random test playback
 - ABAB loop playback
 - audio state coordination
+- interruption and stop coordination across Training playback actions
 
 It uses a platform client abstraction:
 
@@ -215,15 +218,16 @@ The audio runtime is modeled as explicit finite state:
 ```text
 idle
 recording
-playing(source: .standard | .userRecording | .randomTest)
-playingABAB
+playing(source: .standard | .userRecording | .randomTest | .ababLoop)
 ```
 
 Important behavioral constraints:
 
 - recording and playback modes must not overlap illegally
+- starting a new playback action interrupts any current playback action
+- starting recording interrupts active playback before entering recording state
 - navigation must stop active recording or playback before switching cards
-- replaying the same user-recording source while already in that playback state is treated as idempotent, not a fatal transition
+- while recording is active, playback requests remain illegal transitions
 
 The state machine is enforced in `AudioService` and covered by unit tests.
 
