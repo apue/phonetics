@@ -52,21 +52,33 @@
 
 ### 3.2 核心训练卡片页 (The Training Card — P0)
 
-对应 UI 设计图二。
+对应 UI 设计图二；训练目标选择器与最终标准稿见 `Resources/card-target-selector-native-editorial.svg`。
 
-#### 3.2.1 目标展示区 (Target Display)
+#### 3.2.1 训练目标选择器 (Target Selector)
+
+- 主训练界面整体保持当前训练卡片布局，不额外引入独立的“专题页”或“课程阶段页”。
+- 在训练卡页头新增 `Target` 按钮，显示当前训练目标（例如 `Target: ʌ-æ`）。
+- 点击后打开分组列表/Popover，用于切换当前训练集合；列表按以下用户可见分组组织：
+  - `Sound Contrasts`
+  - `Linking / Reduction`
+  - `Stress / Intonation`
+- 分组仅用于帮助扫描；**列表项必须始终是具体训练目标**，例如 `ʌ-æ · but / bat`、`Linking · Pick it up.`、`Intonation · You finished?`。
+- 切换目标后，训练页中的 `Perception` / `Practice` 主体交互保持不变，仅更换当前数据来源。
+- 第一版目标选择器同时支持来自 `pairs` 和 `sentences` 的训练项，不拆成两套入口。
+
+#### 3.2.2 目标展示区 (Target Display)
 
 - 展示对比的 **Left Target (A)** 和 **Right Target (B)**（例如 `but` vs `bat`）。
 - 包含对应的 IPA 音标显示（如 `/bʌt/` vs `/bæt/`）。
 - 当 Tier = Phonemes 时，仅显示音素符号（如 `/ʌ/` vs `/æ/`）。
 
-#### 3.2.2 听辨模块 (Perception Module)
+#### 3.2.3 听辨模块 (Perception Module)
 
 - **Random Test:** 点击后，系统随机（50/50 概率）播放 A 或 B 的标准音。
 - **用户判断:** 用户点击下方按钮选择听到的词。
 - **即时反馈:** 选对亮绿，选错亮红并播放正确发音，计入当前 Session 统计。
 
-#### 3.2.3 练习模块 (Production Module)
+#### 3.2.4 练习模块 (Production Module)
 
 - **录音交互:** 点击 Record 按钮开始录音，再次点击结束（**Toggle 模式**，非 press-and-hold）。录音时按钮显示红色脉冲动画。
 - **单轨回放:** 提供 `Me`（我的录音）和 `Standard`（标准音）单独播放按钮。
@@ -74,12 +86,12 @@
 
 > **技术约束：** 标准音和录音长度不同，两段之间插入固定 300ms 静默间隔，让大脑有切换时间。不做 time-stretching。
 
-#### 3.2.4 状态打标 (Tagging)
+#### 3.2.5 状态打标 (Tagging)
 
 - 提供 `★ Save`（收藏）和 `! Hard`（困难）按钮。
 - 打标数据存入本地 SQLite，关联当前 pair/sentence ID。
 
-#### 3.2.5 会话统计 (Session Stats)
+#### 3.2.6 会话统计 (Session Stats)
 
 实时显示（底部状态栏）：
 
@@ -90,10 +102,11 @@
 | PRACTICES | 录音次数 |
 | TIME | 当前卡片停留时间 (mm:ss) |
 
-#### 3.2.6 卡片导航
+#### 3.2.7 卡片导航
 
-- `Next Card →` 按钮跳转至当前组的下一对 minimal pair。
+- `Next Card →` / `← Prev` 按钮在**当前选中训练目标对应的数据集合**中切换，不跨目标组自动跳转。
 - 支持键盘快捷键：`←/→` 切换卡片，`Space` 播放 Random Test，`R` 开始/停止录音。
+- 当用户从目标选择器切换到新目标时，训练卡片应重置到该目标集合的首个可训练项或上次停留项。
 
 ### 3.3 欢迎页 (Welcome Page — P0)
 
@@ -106,7 +119,7 @@
 ### 3.4 侧边栏导航 (Sidebar — P0)
 
 - 始终显示 Begin / History / Settings 三个入口。
-- 训练时高亮 Begin，显示当前训练的 Tier 和音素对标签。
+- 训练时高亮 Begin，显示当前训练目标摘要（如 `ʌ-æ · but / bat` 或 `Linking · Pick it up.`），而不是暴露抽象的 Tier 选择流程。
 - **可折叠：** 用户可通过点击或快捷键 `⌘+\` 折叠侧边栏以最大化训练区域。
 
 ### 3.5 外部数据管线与 CLI (Data Pipeline — V2，本版不实现)
