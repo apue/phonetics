@@ -89,7 +89,43 @@ final class HeadlessAcceptanceRunnerTests: XCTestCase {
         XCTAssertTrue(result.output.contains("status=ok"))
         XCTAssertTrue(result.output.contains("command=ui-readout"))
         XCTAssertTrue(result.output.contains("onboarding_text="))
+        XCTAssertTrue(result.output.contains("onboarding_markers="))
+        XCTAssertTrue(result.output.contains("onboarding_sections="))
         XCTAssertTrue(result.output.contains("training_text="))
+        XCTAssertTrue(result.output.contains("training_markers="))
+        XCTAssertTrue(result.output.contains("training_sections="))
+    }
+
+    func testUIScreenshotReadoutAnalyzerExtractsStableMarkersAndSections() {
+        let onboarding = UIScreenshotReadoutAnalyzer.analyze(
+            text: "FIRST RUN | Welcome to Phonetics Maestro | Begin Training | Not Now",
+            kind: .onboarding
+        )
+
+        XCTAssertEqual(onboarding.markers, ["first_run", "welcome", "begin_training", "not_now"])
+        XCTAssertEqual(onboarding.sections, ["overlay", "actions"])
+
+        let training = UIScreenshotReadoutAnalyzer.analyze(
+            text: "Begin | Current Target | Session | Target | Perception | Practice | Listens | Correct | Practices | Time",
+            kind: .training
+        )
+
+        XCTAssertEqual(
+            training.markers,
+            [
+                "begin",
+                "current_target",
+                "session",
+                "target",
+                "perception",
+                "practice",
+                "listens",
+                "correct",
+                "practices",
+                "time"
+            ]
+        )
+        XCTAssertEqual(training.sections, ["sidebar", "header", "interaction", "stats"])
     }
 
     private func value(for key: String, in output: String) throws -> Int {

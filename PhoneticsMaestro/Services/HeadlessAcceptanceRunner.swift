@@ -152,7 +152,11 @@ public struct HeadlessAcceptanceRunner: Sendable {
             status: "ok",
             command: HeadlessAcceptanceCommand.uiReadout.rawValue,
             fields: [
+                "onboarding_markers": joined(readout.onboardingMarkers),
+                "onboarding_sections": joined(readout.onboardingSections),
                 "onboarding_text": readout.onboardingText,
+                "training_markers": joined(readout.trainingMarkers),
+                "training_sections": joined(readout.trainingSections),
                 "training_text": readout.trainingText
             ]
         )
@@ -174,6 +178,10 @@ public struct HeadlessAcceptanceRunner: Sendable {
         var lines = ["status=\(status)", "command=\(command)"]
         lines.append(contentsOf: fields.keys.sorted().map { "\($0)=\(fields[$0] ?? "")" })
         return lines.joined(separator: "\n") + "\n"
+    }
+
+    private func joined(_ values: [String]) -> String {
+        values.joined(separator: "|")
     }
 
     private func failureOutput(for command: HeadlessAcceptanceCommand, error: Error) -> String {
