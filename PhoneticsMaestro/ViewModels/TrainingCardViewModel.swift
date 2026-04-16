@@ -13,14 +13,35 @@ final class TrainingCardViewModel {
     var perceptionState: PerceptionState = .idle
     var sessionStats = SessionStats()
     var selectedPracticeTarget: PairOption = .left
-    var isRecording = false
-    var isABABLooping = false
-    var activePlaybackControl: TrainingPlaybackControl?
-    var isPlaybackActive = false
+    var interactionState: TrainingInteractionState = .idle
     var isSaved = false
     var isHard = false
     var playbackRate: Float = 1.0
     var ababIntervalMilliseconds = 300
+    var isRecording: Bool {
+        interactionState == .recording
+    }
+    var isABABLooping: Bool {
+        guard case let .playing(control) = interactionState else {
+            return false
+        }
+
+        if case .ababLoop = control {
+            return true
+        }
+
+        return false
+    }
+    var activePlaybackControl: TrainingPlaybackControl? {
+        guard case let .playing(control) = interactionState else {
+            return nil
+        }
+
+        return control
+    }
+    var isPlaybackActive: Bool {
+        activePlaybackControl != nil
+    }
     var feedbackHighlight: TrainingFeedbackHighlight? {
         switch perceptionState {
         case .correct:
@@ -234,7 +255,7 @@ final class TrainingCardViewModel {
 
         if isRecording {
             _ = try await audioService.stopRecording()
-            isRecording = false
+            interactionState = .idle
             sessionStats.practices += 1
             try await persistSessionStats()
             return
@@ -251,8 +272,7 @@ final class TrainingCardViewModel {
             attempt: sessionStats.practices + 1,
             sessionDate: sessionDateProvider()
         )
-        isRecording = true
-        isABABLooping = false
+        interactionState = .recording
         errorMessage = nil
     }
 
@@ -293,7 +313,6 @@ final class TrainingCardViewModel {
             silenceNanoseconds: UInt64(ababIntervalMilliseconds) * 1_000_000
         )
         beginPlayback(control: .ababLoop(selectedPracticeTarget))
-        isABABLooping = true
         errorMessage = nil
     }
 
@@ -431,7 +450,7 @@ final class TrainingCardViewModel {
 
         if isRecording {
             _ = try await audioService.stopRecording()
-            isRecording = false
+            interactionState = .idle
             sessionStats.practices += 1
         }
     }
@@ -448,10 +467,7 @@ final class TrainingCardViewModel {
         pendingAnswer = nil
         perceptionState = .idle
         selectedPracticeTarget = .left
-        activePlaybackControl = nil
-        isPlaybackActive = false
-        isRecording = false
-        isABABLooping = false
+        interactionState = .idle
 
         guard let currentCard else {
             clearCurrentCardState()
@@ -521,15 +537,12 @@ final class TrainingCardViewModel {
 
     private func beginPlayback(control: TrainingPlaybackControl) {
         playbackGeneration += 1
-        activePlaybackControl = control
-        isPlaybackActive = true
+        interactionState = .playing(control: control)
     }
 
     private func clearPlaybackState() {
         playbackGeneration += 1
-        activePlaybackControl = nil
-        isPlaybackActive = false
-        isABABLooping = false
+        interactionState = .idle
     }
 
     private func finishPlaybackIfCurrent(generation: Int) {
@@ -537,8 +550,7 @@ final class TrainingCardViewModel {
             return
         }
 
-        activePlaybackControl = nil
-        isPlaybackActive = false
+        interactionState = .idle
     }
 
     private func runPlayback<T>(

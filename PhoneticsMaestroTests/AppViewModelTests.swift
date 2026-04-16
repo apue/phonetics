@@ -52,6 +52,38 @@ final class AppViewModelTests: XCTestCase {
         XCTAssertEqual(updatedSettings?.hasDismissedOnboarding, true)
         XCTAssertEqual(viewModel.selectedScreen, .training)
     }
+
+    func testInitializeUsesInjectedAppInitializer() async {
+        let initializer = MockAppInitializer()
+        let settingsService = MockOnboardingSettingsDataService(
+            settings: AppSettings(hasDismissedOnboarding: true)
+        )
+        let viewModel = AppViewModel(
+            trainingCardViewModel: TrainingCardViewModel(
+                dataService: MockTrainingDataService(),
+                audioService: MockTrainingAudioService(randomTestIndex: 0)
+            ),
+            appInitializer: initializer,
+            settingsService: settingsService
+        )
+
+        await viewModel.initialize()
+
+        let callCount = await initializer.callCount()
+        XCTAssertEqual(callCount, 1)
+    }
+}
+
+actor MockAppInitializer: AppInitializing {
+    private var initializeCount = 0
+
+    func initialize() async throws {
+        initializeCount += 1
+    }
+
+    func callCount() -> Int {
+        initializeCount
+    }
 }
 
 actor MockOnboardingSettingsDataService: SettingsDataServing {

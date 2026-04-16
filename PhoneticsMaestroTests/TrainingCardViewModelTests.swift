@@ -156,6 +156,25 @@ final class TrainingCardViewModelTests: XCTestCase {
         XCTAssertEqual(stopRecordingCount, 1)
     }
 
+    func testInteractionStateReflectsRecordingLifecycle() async throws {
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            sessionDateProvider: { "2026-04-13" }
+        )
+
+        await viewModel.loadInitialPair()
+        XCTAssertEqual(viewModel.interactionState, .idle)
+
+        try await viewModel.toggleRecording()
+        XCTAssertEqual(viewModel.interactionState, .recording)
+
+        try await viewModel.toggleRecording()
+        XCTAssertEqual(viewModel.interactionState, .idle)
+    }
+
     func testPracticePlaybackUsesSelectedTargetForStandardAndABAB() async throws {
         let dataService = MockTrainingDataService()
         let audioService = MockTrainingAudioService(randomTestIndex: 0)
@@ -260,6 +279,28 @@ final class TrainingCardViewModelTests: XCTestCase {
 
         XCTAssertNil(viewModel.activePlaybackControl)
         XCTAssertFalse(viewModel.isPlaybackActive)
+    }
+
+    func testInteractionStateReflectsControlledPlaybackLifecycle() async {
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0, playbackMode: .controlled)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService
+        )
+
+        await viewModel.loadInitialPairIfNeeded()
+        let playbackTask = Task {
+            await viewModel.tapTargetCard(.left)
+        }
+
+        await audioService.waitUntilPlaybackStarts(count: 1)
+        XCTAssertEqual(viewModel.interactionState, .playing(control: .targetCard(.left)))
+
+        await audioService.completePlayback()
+        await playbackTask.value
+
+        XCTAssertEqual(viewModel.interactionState, .idle)
     }
 
     func testPlayUserRecordingAndStopABABLoopDelegateToAudioService() async throws {
