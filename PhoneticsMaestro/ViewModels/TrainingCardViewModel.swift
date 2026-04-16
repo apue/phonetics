@@ -12,6 +12,8 @@ final class TrainingCardViewModel {
     var selectedPracticeTarget: PairOption = .left
     var isRecording = false
     var isABABLooping = false
+    var activePlaybackControl: TrainingPlaybackControl?
+    var isPlaybackActive = false
     var isSaved = false
     var isHard = false
     var feedbackHighlight: TrainingFeedbackHighlight? {
@@ -33,6 +35,7 @@ final class TrainingCardViewModel {
     private var timerTask: Task<Void, Never>?
     private var baseElapsedSeconds = 0
     private var cardStartDate: Date?
+    private var playbackGeneration = 0
 
     init(
         dataService: any TrainingDataServing = DataService.shared,
@@ -72,15 +75,35 @@ final class TrainingCardViewModel {
         await loadPreviousPair(forceReload: false)
     }
 
+    func tapTargetCard(_ option: PairOption) async {
+        guard let currentPair else {
+            errorMessage = "Load a training pair before playback."
+            return
+        }
+
+        selectedPracticeTarget = option
+
+        do {
+            try await runPlayback(control: .targetCard(option)) {
+                try await self.audioService.playStandard(for: self.text(for: option, pair: currentPair))
+            }
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func playRandomTest() async throws {
         guard let currentPair else {
             errorMessage = "Load a training pair before starting a random test."
             return
         }
 
-        let selectedIndex = try await audioService.playRandomTest(
-            options: [currentPair.leftText, currentPair.rightText]
-        )
+        let selectedIndex = try await runPlayback(control: .randomTest) {
+            try await self.audioService.playRandomTest(
+                options: [currentPair.leftText, currentPair.rightText]
+            )
+        }
 
         pendingAnswer = selectedIndex == 0 ? .left : .right
         sessionStats.listens += 1
@@ -115,7 +138,9 @@ final class TrainingCardViewModel {
         }
 
         do {
-            try await audioService.playStandard(for: text(for: expected, pair: currentPair))
+            try await runPlayback(control: .practiceStandard(expected)) {
+                try await self.audioService.playStandard(for: self.text(for: expected, pair: currentPair))
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -139,6 +164,11 @@ final class TrainingCardViewModel {
             return
         }
 
+        if isPlaybackActive {
+            await audioService.stop()
+            clearPlaybackState()
+        }
+
         _ = try await audioService.startRecording(
             itemType: "pair",
             itemID: currentPair.id,
@@ -156,11 +186,15 @@ final class TrainingCardViewModel {
             return
         }
 
-        try await audioService.playStandard(for: text(for: selectedPracticeTarget, pair: currentPair))
+        try await runPlayback(control: .practiceStandard(selectedPracticeTarget)) {
+            try await self.audioService.playStandard(for: self.text(for: selectedPracticeTarget, pair: currentPair))
+        }
     }
 
     func playUserRecording() async throws {
-        try await audioService.playUserRecording()
+        try await runPlayback(control: .userRecording) {
+            try await self.audioService.playUserRecording()
+        }
     }
 
     func toggleABABLoop() async throws {
@@ -170,20 +204,21 @@ final class TrainingCardViewModel {
         }
 
         if isABABLooping {
-            await audioService.stop()
-            isABABLooping = false
+            await stopPlayback()
             return
         }
 
         try await audioService.startABABLoop(
             standardText: text(for: selectedPracticeTarget, pair: currentPair)
         )
+        beginPlayback(control: .ababLoop(selectedPracticeTarget))
         isABABLooping = true
+        errorMessage = nil
     }
 
     func stopPlayback() async {
         await audioService.stop()
-        isABABLooping = false
+        clearPlaybackState()
     }
 
     func refreshElapsedTime() {
@@ -285,9 +320,9 @@ final class TrainingCardViewModel {
     }
 
     private func prepareForPairNavigation() async throws {
-        if isABABLooping {
+        if isPlaybackActive {
             await audioService.stop()
-            isABABLooping = false
+            clearPlaybackState()
         }
 
         if isRecording {
@@ -310,6 +345,8 @@ final class TrainingCardViewModel {
         pendingAnswer = nil
         perceptionState = .idle
         selectedPracticeTarget = .left
+        activePlaybackControl = nil
+        isPlaybackActive = false
         isRecording = false
         isABABLooping = false
 
@@ -368,6 +405,45 @@ final class TrainingCardViewModel {
 
     private func handleTimerTick() {
         refreshElapsedTime()
+    }
+
+    private func beginPlayback(control: TrainingPlaybackControl) {
+        playbackGeneration += 1
+        activePlaybackControl = control
+        isPlaybackActive = true
+    }
+
+    private func clearPlaybackState() {
+        playbackGeneration += 1
+        activePlaybackControl = nil
+        isPlaybackActive = false
+        isABABLooping = false
+    }
+
+    private func finishPlaybackIfCurrent(generation: Int) {
+        guard playbackGeneration == generation else {
+            return
+        }
+
+        activePlaybackControl = nil
+        isPlaybackActive = false
+    }
+
+    private func runPlayback<T>(
+        control: TrainingPlaybackControl,
+        operation: () async throws -> T
+    ) async throws -> T {
+        beginPlayback(control: control)
+        let generation = playbackGeneration
+
+        do {
+            let result = try await operation()
+            finishPlaybackIfCurrent(generation: generation)
+            return result
+        } catch {
+            finishPlaybackIfCurrent(generation: generation)
+            throw error
+        }
     }
 
     private func text(for option: PairOption, pair: PhonePair) -> String {

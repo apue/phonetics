@@ -11,6 +11,7 @@ actor AudioService {
     private var state: AudioState = .idle
     private var lastRecordingURL: URL?
     private var ababTask: Task<Void, Never>?
+    private var playbackGeneration = 0
 
     init(
         platformClient: any AudioPlatformClient = SystemAudioPlatformClient(),
@@ -36,7 +37,7 @@ actor AudioService {
         attempt: Int,
         sessionDate: String
     ) async throws -> URL {
-        try ensureIdle(for: "startRecording")
+        try await prepareForRecording(action: "startRecording")
 
         let hasPermission = await platformClient.requestRecordPermission()
         guard hasPermission else {
@@ -87,20 +88,19 @@ actor AudioService {
     }
 
     func playStandard(for text: String, voiceIdentifier: String? = nil, rate: Float = 1.0) async throws {
-        try ensureIdle(for: "playStandard")
-        transition(to: .playing(source: .standard))
+        let generation = try await beginPlayback(action: "playStandard", source: .standard)
 
         do {
             try await platformClient.playSpeech(text: text, voiceIdentifier: voiceIdentifier, rate: rate)
         } catch let error as AudioServiceError {
-            transition(to: .idle)
+            finishPlaybackIfCurrent(generation: generation)
             throw error
         } catch {
-            transition(to: .idle)
+            finishPlaybackIfCurrent(generation: generation)
             throw AudioServiceError.playbackFailed(error.localizedDescription)
         }
 
-        transition(to: .idle)
+        finishPlaybackIfCurrent(generation: generation)
     }
 
     func playRandomTest(
@@ -113,36 +113,42 @@ actor AudioService {
         }
 
         let selectedIndex = randomIndex(options.count)
-        try await ensureIdleThenPlaySpeech(
-            text: options[selectedIndex],
-            source: .randomTest,
-            attemptedAction: "playRandomTest",
-            voiceIdentifier: voiceIdentifier,
-            rate: rate
-        )
+        let generation = try await beginPlayback(action: "playRandomTest", source: .randomTest)
+
+        do {
+            try await platformClient.playSpeech(
+                text: options[selectedIndex],
+                voiceIdentifier: voiceIdentifier,
+                rate: rate
+            )
+        } catch let error as AudioServiceError {
+            finishPlaybackIfCurrent(generation: generation)
+            throw error
+        } catch {
+            finishPlaybackIfCurrent(generation: generation)
+            throw AudioServiceError.playbackFailed(error.localizedDescription)
+        }
+
+        finishPlaybackIfCurrent(generation: generation)
         return selectedIndex
     }
 
     func playUserRecording(rate: Float = 1.0) async throws {
-        if case .playing(source: .userRecording) = state {
-            return
-        }
-
-        try ensureIdle(for: "playUserRecording")
+        try ensureNotRecording(for: "playUserRecording")
         let recordingURL = try await requireRecordingURL()
-        transition(to: .playing(source: .userRecording))
+        let generation = try await beginPlayback(action: "playUserRecording", source: .userRecording)
 
         do {
             try await platformClient.playAudioFile(at: recordingURL, rate: rate)
         } catch let error as AudioServiceError {
-            transition(to: .idle)
+            finishPlaybackIfCurrent(generation: generation)
             throw error
         } catch {
-            transition(to: .idle)
+            finishPlaybackIfCurrent(generation: generation)
             throw AudioServiceError.playbackFailed(error.localizedDescription)
         }
 
-        transition(to: .idle)
+        finishPlaybackIfCurrent(generation: generation)
     }
 
     func startABABLoop(
@@ -151,13 +157,14 @@ actor AudioService {
         rate: Float = 1.0,
         silenceNanoseconds: UInt64 = 300_000_000
     ) async throws {
-        try ensureIdle(for: "startABABLoop")
+        try ensureNotRecording(for: "startABABLoop")
         let recordingURL = try await requireRecordingURL()
-        transition(to: .playingABAB)
+        let generation = try await beginPlayback(action: "startABABLoop", source: .ababLoop)
 
         ababTask?.cancel()
         ababTask = Task {
             await runABABLoop(
+                generation: generation,
                 standardText: standardText,
                 voiceIdentifier: voiceIdentifier,
                 recordingURL: recordingURL,
@@ -168,21 +175,23 @@ actor AudioService {
     }
 
     func stop() async {
-        ababTask?.cancel()
-        ababTask = nil
-        await platformClient.stopPlayback()
+        await interruptPlayback()
+    }
 
-        switch state {
-        case .playing, .playingABAB:
-            transition(to: .idle)
-        case .idle, .recording:
-            break
+    private func ensureNotRecording(for action: String) throws {
+        if case .recording = state {
+            throw AudioServiceError.illegalTransition(currentState: state, attemptedAction: action)
         }
     }
 
-    private func ensureIdle(for action: String) throws {
-        guard case .idle = state else {
+    private func prepareForRecording(action: String) async throws {
+        switch state {
+        case .idle:
+            return
+        case .recording:
             throw AudioServiceError.illegalTransition(currentState: state, attemptedAction: action)
+        case .playing:
+            await interruptPlayback()
         }
     }
 
@@ -198,27 +207,42 @@ actor AudioService {
         state = newState
     }
 
-    private func ensureIdleThenPlaySpeech(
-        text: String,
-        source: AudioPlaybackSource,
-        attemptedAction: String,
-        voiceIdentifier: String?,
-        rate: Float
-    ) async throws {
-        try ensureIdle(for: attemptedAction)
-        transition(to: .playing(source: source))
-
-        do {
-            try await platformClient.playSpeech(text: text, voiceIdentifier: voiceIdentifier, rate: rate)
-        } catch let error as AudioServiceError {
-            transition(to: .idle)
-            throw error
-        } catch {
-            transition(to: .idle)
-            throw AudioServiceError.playbackFailed(error.localizedDescription)
+    private func beginPlayback(action: String, source: AudioPlaybackSource) async throws -> Int {
+        switch state {
+        case .idle:
+            break
+        case .recording:
+            throw AudioServiceError.illegalTransition(currentState: state, attemptedAction: action)
+        case .playing:
+            await interruptPlayback()
         }
 
+        playbackGeneration += 1
+        let generation = playbackGeneration
+        transition(to: .playing(source: source))
+        return generation
+    }
+
+    private func finishPlaybackIfCurrent(generation: Int) {
+        guard playbackGeneration == generation else {
+            return
+        }
+
+        if case .playing = state {
+            transition(to: .idle)
+        }
+    }
+
+    private func interruptPlayback() async {
+        guard case .playing = state else {
+            return
+        }
+
+        playbackGeneration += 1
+        ababTask?.cancel()
+        ababTask = nil
         transition(to: .idle)
+        await platformClient.stopPlayback()
     }
 
     private func recordingURL(
@@ -233,6 +257,7 @@ actor AudioService {
     }
 
     private func runABABLoop(
+        generation: Int,
         standardText: String,
         voiceIdentifier: String?,
         recordingURL: URL,
@@ -242,7 +267,7 @@ actor AudioService {
         defer {
             ababTask = nil
 
-            if case .playingABAB = state {
+            if playbackGeneration == generation, case .playing(source: .ababLoop) = state {
                 transition(to: .idle)
             }
         }

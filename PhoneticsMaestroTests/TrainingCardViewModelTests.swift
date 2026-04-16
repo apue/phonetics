@@ -130,6 +130,47 @@ final class TrainingCardViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.isABABLooping)
     }
 
+    func testTapTargetCardSelectsTargetAndPlaysStandard() async {
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService
+        )
+
+        await viewModel.loadInitialPairIfNeeded()
+        await viewModel.tapTargetCard(.right)
+
+        let standardRequests = await audioService.standardPlaybackRequests()
+        XCTAssertEqual(viewModel.selectedPracticeTarget, .right)
+        XCTAssertEqual(standardRequests, ["bat"])
+    }
+
+    func testTapTargetCardMarksPlaybackActiveWhileAudioIsRunning() async {
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0, playbackMode: .controlled)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService
+        )
+
+        await viewModel.loadInitialPairIfNeeded()
+        let playbackTask = Task {
+            await viewModel.tapTargetCard(.left)
+        }
+
+        await audioService.waitUntilPlaybackStarts(count: 1)
+
+        XCTAssertEqual(viewModel.activePlaybackControl, .targetCard(.left))
+        XCTAssertTrue(viewModel.isPlaybackActive)
+
+        await audioService.completePlayback()
+        await playbackTask.value
+
+        XCTAssertNil(viewModel.activePlaybackControl)
+        XCTAssertFalse(viewModel.isPlaybackActive)
+    }
+
     func testPlayUserRecordingAndStopABABLoopDelegateToAudioService() async throws {
         let dataService = MockTrainingDataService()
         let audioService = MockTrainingAudioService(randomTestIndex: 0)
@@ -151,6 +192,54 @@ final class TrainingCardViewModelTests: XCTestCase {
         XCTAssertEqual(userPlaybackCount, 1)
         XCTAssertEqual(stopCount, 1)
         XCTAssertFalse(viewModel.isABABLooping)
+    }
+
+    func testStopPlaybackDelegatesToAudioServiceAndClearsPlaybackState() async {
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0, playbackMode: .controlled)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService
+        )
+
+        await viewModel.loadInitialPairIfNeeded()
+        let playbackTask = Task {
+            await viewModel.tapTargetCard(.left)
+        }
+
+        await audioService.waitUntilPlaybackStarts(count: 1)
+        await viewModel.stopPlayback()
+        await playbackTask.value
+
+        let stopCount = await audioService.stopCallCount()
+        XCTAssertNil(viewModel.activePlaybackControl)
+        XCTAssertFalse(viewModel.isPlaybackActive)
+        XCTAssertEqual(stopCount, 1)
+    }
+
+    func testToggleRecordingStopsActivePlaybackBeforeStartingRecording() async throws {
+        let dataService = MockTrainingDataService()
+        let audioService = MockTrainingAudioService(randomTestIndex: 0, playbackMode: .controlled)
+        let viewModel = TrainingCardViewModel(
+            dataService: dataService,
+            audioService: audioService,
+            sessionDateProvider: { "2026-04-13" }
+        )
+
+        await viewModel.loadInitialPairIfNeeded()
+        let playbackTask = Task {
+            await viewModel.tapTargetCard(.left)
+        }
+
+        await audioService.waitUntilPlaybackStarts(count: 1)
+        try await viewModel.toggleRecording()
+        await playbackTask.value
+
+        let stopCount = await audioService.stopCallCount()
+        XCTAssertEqual(stopCount, 1)
+        XCTAssertTrue(viewModel.isRecording)
+        XCTAssertFalse(viewModel.isPlaybackActive)
+        XCTAssertNil(viewModel.activePlaybackControl)
     }
 
     func testLoadInitialPairReadsExistingTagState() async {
@@ -501,7 +590,13 @@ actor MockTrainingDataService: TrainingDataServing {
 }
 
 actor MockTrainingAudioService: TrainingAudioServing {
+    enum PlaybackMode {
+        case instant
+        case controlled
+    }
+
     private let randomTestIndex: Int
+    private let playbackMode: PlaybackMode
     private var randomRequests: [[String]] = []
     private var standardRequests: [String] = []
     private var recordRequests: [(itemType: String, itemID: Int64, attempt: Int, sessionDate: String)] = []
@@ -509,18 +604,39 @@ actor MockTrainingAudioService: TrainingAudioServing {
     private var userPlaybackCount = 0
     private var ababRequests: [String] = []
     private var stopCount = 0
+    private var audioState: AudioState = .idle
+    private var playbackStartCount = 0
+    private var playbackStartedContinuation: CheckedContinuation<Void, Never>?
+    private var playbackContinuation: CheckedContinuation<Void, Never>?
 
-    init(randomTestIndex: Int) {
+    init(randomTestIndex: Int, playbackMode: PlaybackMode = .instant) {
         self.randomTestIndex = randomTestIndex
+        self.playbackMode = playbackMode
+    }
+
+    func currentState() async -> AudioState {
+        audioState
     }
 
     func playRandomTest(options: [String]) async throws -> Int {
+        audioState = .playing(source: .randomTest)
         randomRequests.append(options)
+        playbackStartCount += 1
+        playbackStartedContinuation?.resume()
+        playbackStartedContinuation = nil
+        await waitForPlaybackIfNeeded()
+        audioState = .idle
         return randomTestIndex
     }
 
     func playStandard(for text: String) async throws {
+        audioState = .playing(source: .standard)
         standardRequests.append(text)
+        playbackStartCount += 1
+        playbackStartedContinuation?.resume()
+        playbackStartedContinuation = nil
+        await waitForPlaybackIfNeeded()
+        audioState = .idle
     }
 
     func startRecording(
@@ -530,24 +646,39 @@ actor MockTrainingAudioService: TrainingAudioServing {
         sessionDate: String
     ) async throws -> URL {
         recordRequests.append((itemType, itemID, attempt, sessionDate))
+        audioState = .recording(recordingURL: URL(fileURLWithPath: "/tmp/\(itemType)-\(itemID)-attempt-\(attempt).caf"))
         return URL(fileURLWithPath: "/tmp/\(itemType)-\(itemID)-attempt-\(attempt).caf")
     }
 
     func stopRecording() async throws -> URL {
         stopRecordingCount += 1
+        audioState = .idle
         return URL(fileURLWithPath: "/tmp/pair-1-attempt-\(stopRecordingCount).caf")
     }
 
     func playUserRecording() async throws {
+        audioState = .playing(source: .userRecording)
         userPlaybackCount += 1
+        playbackStartCount += 1
+        playbackStartedContinuation?.resume()
+        playbackStartedContinuation = nil
+        await waitForPlaybackIfNeeded()
+        audioState = .idle
     }
 
     func startABABLoop(standardText: String) async throws {
+        audioState = .playing(source: .ababLoop)
         ababRequests.append(standardText)
+        playbackStartCount += 1
+        playbackStartedContinuation?.resume()
+        playbackStartedContinuation = nil
     }
 
     func stop() async {
+        audioState = .idle
         stopCount += 1
+        playbackContinuation?.resume()
+        playbackContinuation = nil
     }
 
     func randomTestRequests() -> [[String]] {
@@ -576,6 +707,31 @@ actor MockTrainingAudioService: TrainingAudioServing {
 
     func stopCallCount() -> Int {
         stopCount
+    }
+
+    func waitUntilPlaybackStarts(count: Int) async {
+        if playbackStartCount >= count {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            playbackStartedContinuation = continuation
+        }
+    }
+
+    func completePlayback() {
+        playbackContinuation?.resume()
+        playbackContinuation = nil
+    }
+
+    private func waitForPlaybackIfNeeded() async {
+        guard playbackMode == .controlled else {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            playbackContinuation = continuation
+        }
     }
 }
 

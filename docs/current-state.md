@@ -88,6 +88,7 @@ Important implication:
 ### Training
 
 - minimal-pair card with text and IPA for left/right targets
+- target cards are clickable and play standard pronunciation
 - perception flow:
   - `Random Test`
   - left/right answer buttons
@@ -98,6 +99,8 @@ Important implication:
   - standard playback
   - user-recording playback
   - ABAB loop playback
+  - shared `Stop` control
+  - interruptible playback between all Training audio actions
 - tagging:
   - `Save`
   - `Hard`
