@@ -241,8 +241,11 @@ actor AudioService {
         playbackGeneration += 1
         ababTask?.cancel()
         ababTask = nil
-        transition(to: .idle)
         await platformClient.stopPlayback()
+
+        if case .playing = state {
+            transition(to: .idle)
+        }
     }
 
     private func recordingURL(
