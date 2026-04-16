@@ -8,22 +8,11 @@ struct TrainingCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Training Card")
-                .font(.title)
-                .fontWeight(.semibold)
+            headerSection
 
             if let pair = viewModel.currentPair {
-                HStack(spacing: 24) {
-                    targetCard(label: "A", title: pair.leftText, ipa: pair.leftIPA, option: .left)
-                    targetCard(label: "B", title: pair.rightText, ipa: pair.rightIPA, option: .right)
-                }
-
-                Text("Contrast \(pair.phonemeContrast) • Tier \(pair.tier.rawValue)")
-                    .foregroundStyle(.secondary)
-
-                taggingSection
-                perceptionSection(pair: pair)
-                practiceSection(pair: pair)
+                contentBody(pair: pair)
+                footerSection
             } else {
                 ContentUnavailableView(
                     "No Pair Loaded",
@@ -31,35 +20,6 @@ struct TrainingCardView: View {
                     description: Text("Initialize the local database to load the first minimal pair.")
                 )
             }
-
-            HStack(spacing: 12) {
-                Button("Previous Card") {
-                    Task {
-                        await viewModel.loadPreviousPair()
-                    }
-                }
-                .buttonStyle(.bordered)
-                .keyboardShortcut(.leftArrow, modifiers: [])
-
-                Button("Next Card") {
-                    Task {
-                        await viewModel.loadNextPair()
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .keyboardShortcut(.rightArrow, modifiers: [])
-
-                Button("Reload") {
-                    Task {
-                        await viewModel.loadInitialPair()
-                    }
-                }
-                .buttonStyle(.bordered)
-            }
-
-            Text("Click either target card to hear its pronunciation. The selected target is used by Standard and A/B playback.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
         }
         .onAppear {
             syncRecordingAnimation()
@@ -90,6 +50,72 @@ struct TrainingCardView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(viewModel.errorMessage ?? "")
+        }
+    }
+
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Training Card")
+                .font(.title)
+                .fontWeight(.semibold)
+
+            if let pair = viewModel.currentPair {
+                Text("Contrast \(pair.phonemeContrast) • Tier \(pair.tier.rawValue)")
+                    .foregroundStyle(.secondary)
+
+                taggingSection
+            } else {
+                Text("Load the next pair to continue the current session.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func contentBody(pair: PhonePair) -> some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(spacing: 24) {
+                targetCard(label: "A", title: pair.leftText, ipa: pair.leftIPA, option: .left)
+                targetCard(label: "B", title: pair.rightText, ipa: pair.rightIPA, option: .right)
+            }
+
+            HStack(alignment: .top, spacing: 20) {
+                perceptionSection(pair: pair)
+                practiceSection(pair: pair)
+            }
+        }
+    }
+
+    private var footerSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                Button("Previous Card") {
+                    Task {
+                        await viewModel.loadPreviousPair()
+                    }
+                }
+                .buttonStyle(.bordered)
+                .keyboardShortcut(.leftArrow, modifiers: [])
+
+                Button("Next Card") {
+                    Task {
+                        await viewModel.loadNextPair()
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.rightArrow, modifiers: [])
+
+                Button("Reload") {
+                    Task {
+                        await viewModel.loadInitialPair()
+                    }
+                }
+                .buttonStyle(.bordered)
+            }
+
+            Text("Click either target card to hear its pronunciation. The selected target is used by Standard and A/B playback.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -212,88 +238,96 @@ struct TrainingCardView: View {
             Text("Selected target: \(selectedTargetLabel(for: pair))")
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: 12) {
-                Button(viewModel.isRecording ? "Stop Record" : "Record") {
-                    Task {
-                        do {
-                            try await viewModel.toggleRecording()
-                        } catch {
-                            viewModel.errorMessage = error.localizedDescription
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    Button(viewModel.isRecording ? "Stop Record" : "Record") {
+                        Task {
+                            do {
+                                try await viewModel.toggleRecording()
+                            } catch {
+                                viewModel.errorMessage = error.localizedDescription
+                            }
                         }
                     }
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(viewModel.isRecording ? .red : .accentColor)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.red.opacity(viewModel.isRecording ? 0.45 : 0.0), lineWidth: 2)
-                        .scaleEffect(isRecordButtonPulsing ? 1.08 : 0.96)
-                        .opacity(isRecordButtonPulsing ? 0.2 : 0.0)
-                        .animation(
-                            viewModel.isRecording
-                                ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true)
-                                : .easeOut(duration: 0.2),
-                            value: isRecordButtonPulsing
-                        )
-                }
-                .scaleEffect(isRecordButtonPulsing ? 1.03 : 1.0)
-                .shadow(color: Color.red.opacity(isRecordButtonPulsing ? 0.2 : 0.0), radius: 14)
-                .animation(
-                    viewModel.isRecording
-                        ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true)
-                        : .easeOut(duration: 0.2),
-                    value: isRecordButtonPulsing
-                )
-                .keyboardShortcut("r", modifiers: [])
+                    .buttonStyle(.borderedProminent)
+                    .tint(viewModel.isRecording ? .red : .accentColor)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.red.opacity(viewModel.isRecording ? 0.45 : 0.0), lineWidth: 2)
+                            .scaleEffect(isRecordButtonPulsing ? 1.08 : 0.96)
+                            .opacity(isRecordButtonPulsing ? 0.2 : 0.0)
+                            .animation(
+                                viewModel.isRecording
+                                    ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true)
+                                    : .easeOut(duration: 0.2),
+                                value: isRecordButtonPulsing
+                            )
+                    }
+                    .scaleEffect(isRecordButtonPulsing ? 1.03 : 1.0)
+                    .shadow(color: Color.red.opacity(isRecordButtonPulsing ? 0.2 : 0.0), radius: 14)
+                    .animation(
+                        viewModel.isRecording
+                            ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true)
+                            : .easeOut(duration: 0.2),
+                        value: isRecordButtonPulsing
+                    )
+                    .keyboardShortcut("r", modifiers: [])
 
-                Button("Standard") {
-                    Task {
-                        do {
-                            try await viewModel.playSelectedStandard()
-                        } catch {
-                            viewModel.errorMessage = error.localizedDescription
+                    Button("Standard") {
+                        Task {
+                            do {
+                                try await viewModel.playSelectedStandard()
+                            } catch {
+                                viewModel.errorMessage = error.localizedDescription
+                            }
                         }
                     }
-                }
-                .buttonStyle(.bordered)
-                .disabled(viewModel.isRecording)
+                    .buttonStyle(.bordered)
+                    .disabled(viewModel.isRecording)
 
-                Button("Me") {
-                    Task {
-                        do {
-                            try await viewModel.playUserRecording()
-                        } catch {
-                            viewModel.errorMessage = error.localizedDescription
+                    Button("Me") {
+                        Task {
+                            do {
+                                try await viewModel.playUserRecording()
+                            } catch {
+                                viewModel.errorMessage = error.localizedDescription
+                            }
                         }
                     }
-                }
-                .buttonStyle(.bordered)
-                .disabled(viewModel.isRecording || viewModel.sessionStats.practices == 0)
+                    .buttonStyle(.bordered)
+                    .disabled(viewModel.isRecording || viewModel.sessionStats.practices == 0)
 
-                Button("Stop") {
-                    Task {
-                        await viewModel.stopPlayback()
-                    }
-                }
-                .buttonStyle(.bordered)
-                .disabled(!viewModel.isPlaybackActive)
-                .keyboardShortcut(.escape, modifiers: [])
-
-                Button(viewModel.isABABLooping ? "Stop A/B" : "A/B") {
-                    Task {
-                        do {
-                            try await viewModel.toggleABABLoop()
-                        } catch {
-                            viewModel.errorMessage = error.localizedDescription
+                    Button("Stop") {
+                        Task {
+                            await viewModel.stopPlayback()
                         }
                     }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(viewModel.isRecording || viewModel.sessionStats.practices == 0)
-            }
+                    .buttonStyle(.bordered)
+                    .disabled(!viewModel.isPlaybackActive)
+                    .keyboardShortcut(.escape, modifiers: [])
 
-            Text(practiceFeedbackText)
+                    Button(viewModel.isABABLooping ? "Stop A/B" : "A/B") {
+                        Task {
+                            do {
+                                try await viewModel.toggleABABLoop()
+                            } catch {
+                                viewModel.errorMessage = error.localizedDescription
+                            }
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(viewModel.isRecording || viewModel.sessionStats.practices == 0)
+                }
+
+                Text(Self.practiceHintText(
+                    isRecording: viewModel.isRecording,
+                    isABABLooping: viewModel.isABABLooping,
+                    isPlaybackActive: viewModel.isPlaybackActive,
+                    practices: viewModel.sessionStats.practices
+                ))
+                .font(.footnote)
                 .foregroundStyle(viewModel.isRecording ? .red : .secondary)
+            }
 
             HStack(spacing: 20) {
                 statValue("PRACTICES", value: "\(viewModel.sessionStats.practices)")
@@ -341,23 +375,12 @@ struct TrainingCardView: View {
     }
 
     private var practiceFeedbackText: String {
-        if viewModel.isRecording {
-            return "Recording in progress. Press Stop Record to save this attempt."
-        }
-
-        if viewModel.isABABLooping {
-            return "ABAB comparison is running for the selected target. Use Stop or A/B to end it."
-        }
-
-        if viewModel.isPlaybackActive {
-            return "Playback is active. Use Stop or start another playback action to interrupt it."
-        }
-
-        if viewModel.sessionStats.practices == 0 {
-            return "Record your first attempt to unlock Me and A/B playback."
-        }
-
-        return "Use Standard, Me, and A/B to compare your latest recording with the selected target."
+        Self.practiceHintText(
+            isRecording: viewModel.isRecording,
+            isABABLooping: viewModel.isABABLooping,
+            isPlaybackActive: viewModel.isPlaybackActive,
+            practices: viewModel.sessionStats.practices
+        )
     }
 
     private func selectedTargetLabel(for pair: PhonePair) -> String {
@@ -370,7 +393,36 @@ struct TrainingCardView: View {
     }
 
     private var correctStatText: String {
-        "\(viewModel.sessionStats.correct)/\(viewModel.sessionStats.listens)"
+        Self.correctCountText(correct: viewModel.sessionStats.correct)
+    }
+
+    static func correctCountText(correct: Int) -> String {
+        "\(correct)"
+    }
+
+    static func practiceHintText(
+        isRecording: Bool,
+        isABABLooping: Bool,
+        isPlaybackActive: Bool,
+        practices: Int
+    ) -> String {
+        if isRecording {
+            return "Recording in progress. Press Stop Record to save this attempt."
+        }
+
+        if isABABLooping {
+            return "ABAB comparison is running for the selected target. Use Stop or A/B to end it."
+        }
+
+        if isPlaybackActive {
+            return "Playback is active. Use Stop or start another playback action to interrupt it."
+        }
+
+        if practices == 0 {
+            return "Record your first attempt to unlock Me and A/B playback."
+        }
+
+        return "Use Standard, Me, and A/B to compare your latest recording with the selected target."
     }
 
     private var elapsedTimeText: String {

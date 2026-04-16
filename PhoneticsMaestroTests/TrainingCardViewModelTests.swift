@@ -3,6 +3,32 @@ import XCTest
 
 @MainActor
 final class TrainingCardViewModelTests: XCTestCase {
+    func testCorrectStatTextDisplaysAbsoluteCountOnly() {
+        XCTAssertEqual(TrainingCardView.correctCountText(correct: 9), "9")
+    }
+
+    func testPracticeHintTextReflectsRecordingAndPlaybackState() {
+        XCTAssertEqual(
+            TrainingCardView.practiceHintText(
+                isRecording: true,
+                isABABLooping: false,
+                isPlaybackActive: false,
+                practices: 0
+            ),
+            "Recording in progress. Press Stop Record to save this attempt."
+        )
+
+        XCTAssertEqual(
+            TrainingCardView.practiceHintText(
+                isRecording: false,
+                isABABLooping: false,
+                isPlaybackActive: false,
+                practices: 0
+            ),
+            "Record your first attempt to unlock Me and A/B playback."
+        )
+    }
+
     func testPlayRandomTestUpdatesListenCountAndWaitsForAnswer() async throws {
         let dataService = MockTrainingDataService()
         let audioService = MockTrainingAudioService(randomTestIndex: 1)

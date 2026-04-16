@@ -167,6 +167,33 @@ final class DataServiceTests: XCTestCase {
         XCTAssertEqual(fetched, updated)
     }
 
+    func testFetchSettingsReturnsDismissedOnboardingFlagFromPersistedRow() async throws {
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = DataService(appSupportURL: appSupportURL)
+        try await service.initialize()
+
+        try await service.updateSettings(AppSettings(hasDismissedOnboarding: true))
+
+        let settings = try await service.fetchSettings()
+        XCTAssertTrue(settings.hasDismissedOnboarding)
+    }
+
+    func testUpdateSettingsPersistsDismissedOnboardingFlag() async throws {
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = DataService(appSupportURL: appSupportURL)
+        try await service.initialize()
+
+        let updated = AppSettings(hasDismissedOnboarding: true)
+        try await service.updateSettings(updated)
+
+        let fetched = try await service.fetchSettings()
+        XCTAssertEqual(fetched, updated)
+    }
+
     private func makeTemporaryDirectory() -> URL {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)

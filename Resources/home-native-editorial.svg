@@ -1,0 +1,88 @@
+<svg width="1440" height="960" viewBox="0 0 1440 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="960" fill="#EEF1F5"/>
+
+  <rect x="90" y="68" width="1260" height="824" rx="30" fill="#FCFCFE" stroke="#D9DEE7"/>
+  <rect x="90" y="68" width="1260" height="58" rx="30" fill="#F3F5F8"/>
+  <rect x="90" y="96" width="1260" height="30" fill="#F3F5F8"/>
+
+  <circle cx="126" cy="97" r="7" fill="#FF5F57"/>
+  <circle cx="150" cy="97" r="7" fill="#FEBC2E"/>
+  <circle cx="174" cy="97" r="7" fill="#28C840"/>
+
+  <text x="720" y="104" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="17" font-weight="600" fill="#2C3138">
+    Phonetics Maestro
+  </text>
+
+  <rect x="114" y="148" width="228" height="710" rx="24" fill="#F7F8FB" stroke="#E4E8EF"/>
+  <text x="148" y="192" font-family="SF Pro Display, Inter, Arial" font-size="14" font-weight="700" fill="#7A828F">WORKSPACE</text>
+
+  <rect x="136" y="214" width="184" height="54" rx="16" fill="#E8EEFF"/>
+  <circle cx="164" cy="241" r="8" fill="#2E5EEA"/>
+  <text x="185" y="247" font-family="SF Pro Display, Inter, Arial" font-size="17" font-weight="600" fill="#2E5EEA">Training</text>
+
+  <rect x="136" y="280" width="184" height="54" rx="16" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <circle cx="164" cy="307" r="8" fill="#9AA3AF"/>
+  <text x="185" y="313" font-family="SF Pro Display, Inter, Arial" font-size="17" font-weight="500" fill="#4B5561">History</text>
+
+  <rect x="136" y="346" width="184" height="54" rx="16" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <circle cx="164" cy="373" r="8" fill="#9AA3AF"/>
+  <text x="185" y="379" font-family="SF Pro Display, Inter, Arial" font-size="17" font-weight="500" fill="#4B5561">Settings</text>
+
+  <text x="148" y="450" font-family="SF Pro Display, Inter, Arial" font-size="13" font-weight="700" fill="#8A93A0">THIS SESSION</text>
+  <rect x="136" y="470" width="184" height="118" rx="18" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="156" y="506" font-family="SF Pro Display, Inter, Arial" font-size="13" font-weight="600" fill="#7A828F">Library</text>
+  <text x="156" y="534" font-family="SF Pro Display, Inter, Arial" font-size="24" font-weight="700" fill="#1D232B">Ready</text>
+  <text x="156" y="560" font-family="SF Pro Display, Inter, Arial" font-size="13" font-weight="500" fill="#66707C">Seed data imported locally</text>
+
+  <rect x="136" y="608" width="184" height="96" rx="18" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="156" y="644" font-family="SF Pro Display, Inter, Arial" font-size="13" font-weight="600" fill="#7A828F">Shortcuts</text>
+  <text x="156" y="672" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="600" fill="#2C3138">⌘\  Toggle Sidebar</text>
+  <text x="156" y="697" font-family="SF Pro Display, Inter, Arial" font-size="15" font-weight="600" fill="#2C3138">→  Next Card</text>
+
+  <rect x="376" y="164" width="846" height="644" rx="30" fill="#F8FAFD" stroke="#E3E7EE"/>
+  <text x="420" y="220" font-family="SF Pro Display, Inter, Arial" font-size="16" font-weight="700" fill="#8A93A0">TRAINING</text>
+  <text x="420" y="276" font-family="SF Pro Display, Inter, Arial" font-size="42" font-weight="800" fill="#2E3640">Word Contrast</text>
+  <text x="420" y="312" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="400" fill="#7A828F">
+    Your working area stays here after onboarding.
+  </text>
+
+  <rect x="420" y="352" width="338" height="128" rx="24" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <rect x="786" y="352" width="392" height="196" rx="24" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <rect x="420" y="504" width="338" height="176" rx="24" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <rect x="420" y="700" width="758" height="72" rx="22" fill="#FFFFFF" stroke="#E1E6EE"/>
+
+  <rect x="496" y="216" width="606" height="480" rx="32" fill="#FFFFFF" stroke="#DCE2EC"/>
+  <rect x="520" y="240" width="146" height="34" rx="17" fill="#EEF3FF"/>
+  <text x="593" y="262" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="14" font-weight="700" fill="#2E5EEA">FIRST RUN</text>
+
+  <text x="540" y="332" font-family="SF Pro Display, Inter, Arial" font-size="44" font-weight="800" fill="#191F27">
+    Welcome to
+  </text>
+  <text x="540" y="382" font-family="SF Pro Display, Inter, Arial" font-size="44" font-weight="800" fill="#191F27">
+    Phonetics Maestro
+  </text>
+  <text x="540" y="430" font-family="SF Pro Display, Inter, Arial" font-size="20" font-weight="400" fill="#697280">
+    This is a one-time introduction, not a permanent destination
+  </text>
+  <text x="540" y="460" font-family="SF Pro Display, Inter, Arial" font-size="20" font-weight="400" fill="#697280">
+    in the sidebar. After this, you land directly in Training.
+  </text>
+
+  <rect x="540" y="500" width="250" height="62" rx="20" fill="#2E5EEA"/>
+  <text x="665" y="540" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="24" font-weight="700" fill="#FFFFFF">
+    Begin Training
+  </text>
+
+  <rect x="808" y="500" width="170" height="62" rx="20" fill="#FFFFFF" stroke="#E1E6EE"/>
+  <text x="893" y="540" text-anchor="middle" font-family="SF Pro Display, Inter, Arial" font-size="22" font-weight="600" fill="#4B5561">
+    Not Now
+  </text>
+
+  <text x="540" y="612" font-family="SF Pro Display, Inter, Arial" font-size="13" font-weight="700" fill="#8A93A0">WHAT HAPPENS NEXT</text>
+  <text x="540" y="646" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="500" fill="#3A424D">
+    Training becomes the default workspace.
+  </text>
+  <text x="540" y="674" font-family="SF Pro Display, Inter, Arial" font-size="18" font-weight="500" fill="#3A424D">
+    History and Settings remain available in the sidebar.
+  </text>
+</svg>

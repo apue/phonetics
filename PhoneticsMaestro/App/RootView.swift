@@ -15,8 +15,29 @@ public struct RootView: View {
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 220)
         } detail: {
-            detailView
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ZStack {
+                detailView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                if viewModel.shouldShowOnboarding {
+                    Color.black.opacity(0.08)
+                        .ignoresSafeArea()
+
+                    OnboardingView(
+                        beginAction: {
+                            Task {
+                                await viewModel.dismissOnboarding()
+                            }
+                        },
+                        dismissAction: {
+                            Task {
+                                await viewModel.dismissOnboarding()
+                            }
+                        }
+                    )
+                    .padding(32)
+                }
+            }
         }
         .toolbar {
             ToolbarItem(placement: .navigation) {
@@ -53,19 +74,6 @@ public struct RootView: View {
     @ViewBuilder
     private var detailView: some View {
         switch viewModel.selectedScreen {
-        case .welcome:
-            WelcomeView(
-                isInitialized: viewModel.isInitialized,
-                beginAction: {
-                    viewModel.showTraining()
-                },
-                historyAction: {
-                    viewModel.selectedScreen = .history
-                },
-                settingsAction: {
-                    viewModel.selectedScreen = .settings
-                }
-            )
         case .training:
             TrainingCardView(viewModel: viewModel.trainingCardViewModel)
         case .history:

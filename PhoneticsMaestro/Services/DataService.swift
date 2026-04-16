@@ -143,7 +143,11 @@ actor DataService {
             let row = try Row.fetchOne(
                 db,
                 sql: """
-                SELECT preferred_voice_name, preferred_microphone_name, abab_interval_ms
+                SELECT
+                    preferred_voice_name,
+                    preferred_microphone_name,
+                    abab_interval_ms,
+                    has_dismissed_onboarding
                 FROM app_settings
                 WHERE id = 1
                 """
@@ -152,7 +156,8 @@ actor DataService {
             return AppSettings(
                 preferredVoiceName: row?["preferred_voice_name"] ?? "System Default",
                 preferredMicrophoneName: row?["preferred_microphone_name"] ?? "System Default",
-                ababIntervalMilliseconds: row?["abab_interval_ms"] ?? 300
+                ababIntervalMilliseconds: row?["abab_interval_ms"] ?? 300,
+                hasDismissedOnboarding: (row?["has_dismissed_onboarding"] ?? 0) != 0
             )
         }
     }
@@ -165,17 +170,20 @@ actor DataService {
                     id,
                     preferred_voice_name,
                     preferred_microphone_name,
-                    abab_interval_ms
-                ) VALUES (1, ?, ?, ?)
+                    abab_interval_ms,
+                    has_dismissed_onboarding
+                ) VALUES (1, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     preferred_voice_name = excluded.preferred_voice_name,
                     preferred_microphone_name = excluded.preferred_microphone_name,
-                    abab_interval_ms = excluded.abab_interval_ms
+                    abab_interval_ms = excluded.abab_interval_ms,
+                    has_dismissed_onboarding = excluded.has_dismissed_onboarding
                 """,
                 arguments: [
                     settings.preferredVoiceName,
                     settings.preferredMicrophoneName,
-                    settings.ababIntervalMilliseconds
+                    settings.ababIntervalMilliseconds,
+                    settings.hasDismissedOnboarding
                 ]
             )
         }
@@ -371,7 +379,30 @@ actor DataService {
                 table.column("preferred_voice_name", .text).notNull().defaults(to: "System Default")
                 table.column("preferred_microphone_name", .text).notNull().defaults(to: "System Default")
                 table.column("abab_interval_ms", .integer).notNull().defaults(to: 300)
+                table.column("has_dismissed_onboarding", .integer).notNull().defaults(to: 0)
             }
+        }
+
+        migrator.registerMigration("addOnboardingDismissal") { db in
+            let hasOnboardingColumn = try Int.fetchOne(
+                db,
+                sql: """
+                SELECT COUNT(*)
+                FROM pragma_table_info('app_settings')
+                WHERE name = 'has_dismissed_onboarding'
+                """
+            ) ?? 0
+
+            guard hasOnboardingColumn == 0 else {
+                return
+            }
+
+            try db.execute(
+                sql: """
+                ALTER TABLE app_settings
+                ADD COLUMN has_dismissed_onboarding INTEGER NOT NULL DEFAULT 0
+                """
+            )
         }
 
         do {
