@@ -57,7 +57,7 @@ struct TrainingCardView: View {
                 .buttonStyle(.bordered)
             }
 
-            Text("The current practice target is highlighted above. Use Record to capture yourself, then compare against the selected standard target.")
+            Text("Click either target card to hear its pronunciation. The selected target is used by Standard and A/B playback.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -123,7 +123,9 @@ struct TrainingCardView: View {
 
     private func targetCard(label: String, title: String, ipa: String, option: PairOption) -> some View {
         Button {
-            viewModel.selectPracticeTarget(option)
+            Task {
+                await viewModel.tapTargetCard(option)
+            }
         } label: {
             VStack(alignment: .leading, spacing: 8) {
                 Text(label)
@@ -142,6 +144,7 @@ struct TrainingCardView: View {
             .background(targetBackground(for: option), in: RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
+        .disabled(viewModel.isRecording)
     }
 
     @ViewBuilder
@@ -163,6 +166,7 @@ struct TrainingCardView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.space, modifiers: [])
+                .disabled(viewModel.isRecording)
 
                 Button(pair.leftText) {
                     Task {
@@ -266,6 +270,15 @@ struct TrainingCardView: View {
                 .buttonStyle(.bordered)
                 .disabled(viewModel.isRecording || viewModel.sessionStats.practices == 0)
 
+                Button("Stop") {
+                    Task {
+                        await viewModel.stopPlayback()
+                    }
+                }
+                .buttonStyle(.bordered)
+                .disabled(!viewModel.isPlaybackActive)
+                .keyboardShortcut(.escape, modifiers: [])
+
                 Button(viewModel.isABABLooping ? "Stop A/B" : "A/B") {
                     Task {
                         do {
@@ -333,7 +346,11 @@ struct TrainingCardView: View {
         }
 
         if viewModel.isABABLooping {
-            return "ABAB comparison is running for the selected target."
+            return "ABAB comparison is running for the selected target. Use Stop or A/B to end it."
+        }
+
+        if viewModel.isPlaybackActive {
+            return "Playback is active. Use Stop or start another playback action to interrupt it."
         }
 
         if viewModel.sessionStats.practices == 0 {
@@ -363,6 +380,10 @@ struct TrainingCardView: View {
     }
 
     private func targetBackground(for option: PairOption) -> some ShapeStyle {
+        if viewModel.activePlaybackControl == .targetCard(option) {
+            return Color.green.opacity(0.18)
+        }
+
         if viewModel.selectedPracticeTarget == option {
             return Color.accentColor.opacity(0.2)
         }

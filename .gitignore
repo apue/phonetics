@@ -3,6 +3,7 @@
 .swiftpm/
 Packages/
 DerivedData/
+.worktrees/
 *.xcuserdatad
 *.xcuserstate
 *.xccheckout

@@ -72,7 +72,7 @@ final class AudioServiceTests: XCTestCase {
             try await service.playRandomTest(options: ["but", "bat"])
         }
 
-        await platform.waitUntilPlaybackStarts()
+        await platform.waitUntilPlaybackStarts(count: 1)
         let currentStateWhilePlaying = await service.currentState()
         XCTAssertEqual(currentStateWhilePlaying, .playing(source: .randomTest))
 
@@ -107,7 +107,7 @@ final class AudioServiceTests: XCTestCase {
 
         try await service.startABABLoop(standardText: "luck", silenceNanoseconds: 1_000_000)
         let loopingState = await service.currentState()
-        XCTAssertEqual(loopingState, .playingABAB)
+        XCTAssertEqual(loopingState, .playing(source: .ababLoop))
 
         try await Task.sleep(nanoseconds: 5_000_000)
         await service.stop()
@@ -118,7 +118,103 @@ final class AudioServiceTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(stopPlaybackCallCount, 1)
     }
 
-    func testPlayUserRecordingWhileAlreadyPlayingDoesNotThrowIllegalTransition() async throws {
+    func testPlayStandardInterruptsCurrentPlaybackAndStartsNewSpeech() async throws {
+        let platform = MockAudioPlatformClient(playbackMode: .controlled)
+        let service = AudioService(
+            platformClient: platform,
+            randomIndex: { _ in 0 }
+        )
+
+        let firstPlayback = Task {
+            try await service.playRandomTest(options: ["but", "bat"])
+        }
+
+        await platform.waitUntilPlaybackStarts(count: 1)
+
+        let secondPlayback = Task {
+            try await service.playStandard(for: "luck")
+        }
+
+        await platform.waitUntilPlaybackStarts(count: 2)
+        await platform.completePlayback()
+
+        _ = try await firstPlayback.value
+        try await secondPlayback.value
+
+        let spokenTexts = await platform.spokenTexts()
+        let stopCount = await platform.stopPlaybackCallCount()
+        let finalState = await service.currentState()
+        XCTAssertEqual(spokenTexts, ["but", "luck"])
+        XCTAssertGreaterThanOrEqual(stopCount, 1)
+        XCTAssertEqual(finalState, .idle)
+    }
+
+    func testStartRecordingStopsPlaybackBeforeEnteringRecording() async throws {
+        let platform = MockAudioPlatformClient(playbackMode: .controlled)
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = AudioService(
+            platformClient: platform,
+            fileManager: .default,
+            appSupportURL: appSupportURL
+        )
+
+        let firstPlayback = Task {
+            try await service.playStandard(for: "bat")
+        }
+
+        await platform.waitUntilPlaybackStarts(count: 1)
+        let recordingURL = try await service.startRecording(
+            itemType: "pair",
+            itemID: 1,
+            attempt: 1,
+            sessionDate: "2026-04-16"
+        )
+
+        _ = try await firstPlayback.value
+        let stopCount = await platform.stopPlaybackCallCount()
+        let currentState = await service.currentState()
+
+        XCTAssertEqual(stopCount, 1)
+        XCTAssertEqual(currentState, .recording(recordingURL: recordingURL))
+    }
+
+    func testStartABABLoopInterruptsSinglePlayback() async throws {
+        let platform = MockAudioPlatformClient(playbackMode: .controlled)
+        let appSupportURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: appSupportURL) }
+
+        let service = AudioService(
+            platformClient: platform,
+            fileManager: .default,
+            appSupportURL: appSupportURL
+        )
+
+        _ = try await service.startRecording(
+            itemType: "pair",
+            itemID: 7,
+            attempt: 1,
+            sessionDate: "2026-04-16"
+        )
+        _ = try await service.stopRecording()
+
+        let firstPlayback = Task {
+            try await service.playStandard(for: "luck")
+        }
+
+        await platform.waitUntilPlaybackStarts(count: 1)
+        try await service.startABABLoop(standardText: "lock", silenceNanoseconds: 1_000_000)
+
+        _ = try await firstPlayback.value
+        let currentState = await service.currentState()
+        let stopCount = await platform.stopPlaybackCallCount()
+
+        XCTAssertEqual(currentState, .playing(source: .ababLoop))
+        XCTAssertGreaterThanOrEqual(stopCount, 1)
+    }
+
+    func testPlayUserRecordingInterruptsCurrentUserPlaybackAndRestarts() async throws {
         let platform = MockAudioPlatformClient(playbackMode: .controlled)
         let appSupportURL = makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: appSupportURL) }
@@ -141,20 +237,21 @@ final class AudioServiceTests: XCTestCase {
             try await service.playUserRecording()
         }
 
-        await platform.waitUntilPlaybackStarts()
+        await platform.waitUntilPlaybackStarts(count: 1)
 
-        do {
+        let secondPlaybackTask = Task {
             try await service.playUserRecording()
-        } catch {
-            XCTFail("Expected re-entrant playUserRecording call to be ignored, got \(error)")
         }
+
+        await platform.waitUntilPlaybackStarts(count: 2)
 
         await platform.completePlayback()
         try await firstPlaybackTask.value
+        try await secondPlaybackTask.value
 
         let audioFilePlaybackCount = await platform.audioFilePlaybackCount()
         let finalState = await service.currentState()
-        XCTAssertEqual(audioFilePlaybackCount, 1)
+        XCTAssertEqual(audioFilePlaybackCount, 2)
         XCTAssertEqual(finalState, .idle)
     }
 
@@ -179,6 +276,7 @@ actor MockAudioPlatformClient: AudioPlatformClient {
     private var speechTexts: [String] = []
     private var stopPlaybackCount = 0
     private var audioFilePlaybackCountValue = 0
+    private var playbackStartCount = 0
     private var playbackContinuation: CheckedContinuation<Void, Error>?
     private var playbackStartedContinuation: CheckedContinuation<Void, Never>?
 
@@ -202,6 +300,7 @@ actor MockAudioPlatformClient: AudioPlatformClient {
 
     func playSpeech(text: String, voiceIdentifier _: String?, rate _: Float) async throws {
         speechTexts.append(text)
+        playbackStartCount += 1
         playbackStartedContinuation?.resume()
         playbackStartedContinuation = nil
         try await waitForPlaybackIfNeeded()
@@ -210,6 +309,7 @@ actor MockAudioPlatformClient: AudioPlatformClient {
     func playAudioFile(at url: URL, rate _: Float) async throws {
         audioFilePlaybackCountValue += 1
         fileURLs.insert(url.path)
+        playbackStartCount += 1
         playbackStartedContinuation?.resume()
         playbackStartedContinuation = nil
         try await waitForPlaybackIfNeeded()
@@ -241,8 +341,8 @@ actor MockAudioPlatformClient: AudioPlatformClient {
         audioFilePlaybackCountValue
     }
 
-    func waitUntilPlaybackStarts() async {
-        if !speechTexts.isEmpty {
+    func waitUntilPlaybackStarts(count: Int) async {
+        if playbackStartCount >= count {
             return
         }
 
