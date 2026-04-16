@@ -137,9 +137,10 @@ struct TrainingCardView: View {
                 Image(systemName: configuration.accessorySymbolName)
                     .font(.caption.weight(.semibold))
             }
-            .frame(minWidth: configuration.minimumWidth, alignment: .leading)
+            .frame(width: configuration.fixedWidth, alignment: .leading)
         }
         .buttonStyle(.borderedProminent)
+        .frame(width: configuration.fixedWidth, alignment: .trailing)
         .popover(isPresented: $isTargetSelectorPresented, arrowEdge: .bottom) {
             targetSelectorPopover
         }

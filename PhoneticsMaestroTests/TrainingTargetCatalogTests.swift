@@ -77,7 +77,8 @@ final class TrainingTargetCatalogTests: XCTestCase {
 
         XCTAssertEqual(short.titleText, "Target: Linking")
         XCTAssertEqual(long.titleText, "Target: Sentence Intonation")
-        XCTAssertEqual(short.minimumWidth, long.minimumWidth)
+        XCTAssertEqual(short.fixedWidth, 260)
+        XCTAssertEqual(long.fixedWidth, 260)
         XCTAssertEqual(short.accessorySymbolName, "chevron.down")
     }
 }
