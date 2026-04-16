@@ -38,4 +38,36 @@ final class TrainingTargetCatalogTests: XCTestCase {
         XCTAssertEqual(card.id, "sentence:1")
         XCTAssertEqual(card.kind.itemType, "sentence")
     }
+
+    func testSelectorSectionsOmitEmptyGroupsAndPreserveDisplayOrder() {
+        let targets = [
+            TrainingTargetSummary(
+                id: "sentence:linking",
+                group: .linkingReduction,
+                title: "Linking",
+                subtitle: "connect words smoothly",
+                currentItemType: "sentence"
+            ),
+            TrainingTargetSummary(
+                id: "pair:ʌ-æ",
+                group: .soundContrasts,
+                title: "ʌ-æ",
+                subtitle: "but / bat",
+                currentItemType: "pair"
+            ),
+            TrainingTargetSummary(
+                id: "pair:iː-ɪ",
+                group: .soundContrasts,
+                title: "iː-ɪ",
+                subtitle: "sheep / ship",
+                currentItemType: "pair"
+            )
+        ]
+
+        let sections = TrainingTargetSelectorSection.sections(from: targets)
+
+        XCTAssertEqual(sections.map(\.group), [.soundContrasts, .linkingReduction])
+        XCTAssertEqual(sections[0].targets.map(\.id), ["pair:ʌ-æ", "pair:iː-ɪ"])
+        XCTAssertEqual(sections[1].targets.map(\.id), ["sentence:linking"])
+    }
 }
